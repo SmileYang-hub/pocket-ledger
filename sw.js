@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ledger-v4';
+const CACHE_NAME = 'ledger-v5';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
