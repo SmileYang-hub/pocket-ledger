@@ -348,17 +348,8 @@
     }
 
 
-function deleteWallet(code) {
-        const hasExpenses = appData.expenses.some(e => e.currency === code);
-        if(hasExpenses) {
-            alert("This wallet has expenses! Please clear history first.");
-            return;
-        }
-        if(confirm(`Delete ${code} wallet?`)) {
-            delete appData.currencies[code];
-            saveData(); updateUI();
-        }
-    }
+
+
     function switchPage(pageId, navEl) {
         triggerHaptic();
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -368,14 +359,7 @@ function deleteWallet(code) {
         if(pageId === 'piggy') renderHistoryPage();
         if(pageId === 'currency') renderCurrencyList();
     }
-function resetEverything() {
-        if(confirm("確定要清空所有資料嗎？這將刪除所有錢包與記帳紀錄。")) {
-            if(confirm("這是最後一次確認！清空後資料無法找回。")) {
-                localStorage.removeItem('dora_v5_final');
-                location.reload(); 
-            }
-        }
-    }
+
     function renderHistoryPage() {
         const todayStr = new Date().toISOString().split('T')[0];
         let todaySum = 0, grandSum = 0;
@@ -406,8 +390,8 @@ function resetEverything() {
         } catch(e) { resetToToday(); }
     }
     function resetToToday() { const t = new Date().toISOString().split('T')[0]; appData.selectedDate = t; document.getElementById('ex-date').value = t; saveData(); }
+    // 1. 強化版 CSV 匯出：欄位拆分 + 錢包對帳總結
     function exportCSV() {
-        // 依照要求的順序：日期, 分類, 細項, 外幣, 台幣, 幣別, 匯率
         let csv = "\uFEFFDate,Category,Description,Amount,TWD_Equiv,Currency,Rate\n";
         
         appData.expenses.forEach(e => {
@@ -417,7 +401,7 @@ function resetEverything() {
             csv += `${e.date},${category},${description},${e.amount},${e.baseAmount},${e.currency},${e.rate}\n`;
         });
 
-        // 加入錢包對帳摘要
+        // 錢包對帳區 (匯入程式會偵測此標記)
         csv += "\n--- Wallet Summary ---\n";
         csv += "Wallet,Initial,Spent,Remaining,Rate\n";
         
@@ -429,20 +413,95 @@ function resetEverything() {
 
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        a.download = `Ledger_${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `Trip_Ledger_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
     }
+
+    // 2. 強化版 CSV 匯入：合併欄位 + 自動恢復錢包
     function importCSV(input) {
+        if (!input.files || !input.files[0]) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            const rows = e.target.result.split('\n').slice(1);
-            rows.forEach(row => {
-                const c = row.split(',');
-                if(c.length >= 6) appData.expenses.push({ id: Date.now()+Math.random(), date:c[0], item:c[1], amount:parseFloat(c[2]), currency:c[3], rate:parseFloat(c[4]), baseAmount:parseInt(c[5]) });
+            const lines = e.target.result.split('\n');
+            if (lines.length < 2) return;
+
+            // 匯入前先清空目前的資料 (覆蓋模式)
+            appData.expenses = [];
+            appData.currencies = {};
+
+            let isSummarySection = false;
+
+            lines.forEach((line, index) => {
+                if (!line.trim() || index === 0) return; // 跳過空行與標題
+
+                // 偵測是否進入錢包總結區
+                if (line.includes("--- Wallet Summary ---")) {
+                    isSummarySection = true;
+                    return;
+                }
+
+                const c = line.split(',');
+                if (!isSummarySection) {
+                    // 解析支出明細 (將 Category 與 Description 合併)
+                    if (c.length >= 6) {
+                        const date = c[0];
+                        const category = c[1];
+                        const description = c[2];
+                        const item = description ? `${category}-${description}` : category;
+                        const amount = parseFloat(c[3]);
+                        const baseAmount = parseInt(c[4]);
+                        const currency = c[5];
+                        const rate = parseFloat(c[6]);
+
+                        if (!isNaN(amount)) {
+                            appData.expenses.push({
+                                id: Date.now() + Math.random(),
+                                date, item, amount, baseAmount, currency, rate
+                            });
+                        }
+                    }
+                } else {
+                    // 解析錢包總結 (恢復錢包設定)
+                    // 欄位: Wallet(0), Initial(1), Spent(2), Remaining(3), Rate(4)
+                    if (c.length >= 5 && c[0] !== "Wallet") {
+                        const code = c[0].trim();
+                        const initial = parseFloat(c[1]);
+                        const rate = parseFloat(c[4]);
+                        if (code && !isNaN(initial)) {
+                            appData.currencies[code] = { initial, rate };
+                        }
+                    }
+                }
             });
-            saveData(); updateUI(); alert("Import Done!");
+
+            saveData();
+            updateUI();
+            alert("✅ Import Successful! Wallets & Records restored.");
+            input.value = ""; // 清空 input 方便下次匯入
         };
         reader.readAsText(input.files[0]);
+    }
+
+function deleteWallet(code) {
+        const hasExpenses = appData.expenses.some(e => e.currency === code);
+        if(hasExpenses) {
+            alert("This wallet has expenses! Please clear history first.");
+            return;
+        }
+        if(confirm(`Delete ${code} wallet?`)) {
+            delete appData.currencies[code];
+            saveData(); 
+            updateUI();
+        }
+    }
+
+    function resetEverything() {
+        if(confirm("確定要清空所有資料嗎？這將刪除所有錢包與記帳紀錄。")) {
+            if(confirm("這是最後一次確認！清空後資料無法找回。")) {
+                localStorage.removeItem('dora_v5_final');
+                location.reload(); 
+            }
+        }
     }
 </script>
 </body>
