@@ -70,6 +70,51 @@
         .back-today { position: absolute; right: 15px; top: 12px; font-size: 12px; color: var(--dora-blue); font-weight: bold; cursor: pointer; background: #E6F7FF; padding: 2px 8px; border-radius: 10px; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #EEE; }
         .del-btn { color: #DDD; font-size: 18px; padding-left: 10px; cursor: pointer; }
+
+/* 修正 Wallet 卡片排版：確保數字與刪除鈕並排不重疊 */
+.wallet-card { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 18px; 
+    background: white; 
+    border-radius: 20px; 
+    margin-bottom: 12px; 
+    border: 2px solid var(--card-border); 
+    position: relative;
+}
+
+/* 錢包內容區：向左推，給右側刪除鈕留空間 */
+.wallet-info-right { 
+    flex: 1;
+    text-align: right; 
+    padding-right: 15px; 
+}
+
+/* 錢包刪除鈕：固定在最右側，仿照 History 樣式 */
+.wallet-del-btn { 
+    color: #DDD; 
+    font-size: 18px; 
+    padding-left: 10px; 
+    cursor: pointer;
+    flex-shrink: 0; /* 防止按鈕被擠壓 */
+}
+
+/* 粉綠色 Reset 按鈕：平常不刻意顯眼 */
+.reset-btn {
+    background: #C1FFC1; 
+    color: #2E8B57; 
+    border: none; 
+    padding: 15px; 
+    width: 100%; 
+    border-radius: 50px; 
+    font-size: 16px; 
+    font-weight: bold; 
+    margin-top: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 0 #9BCD9B;
+}
+.reset-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #9BCD9B; }
     </style>
 </head>
 <body>
@@ -122,6 +167,7 @@
         </div>
         <label style="margin-left:5px;">🛡️ My Wallets</label>
         <div id="currency-list"></div>
+        
         <div class="card" style="margin-top:20px; background:#F9F9F9;">
             <label>📡 Data Portal (PC ↔ Phone)</label>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -130,6 +176,8 @@
             </div>
             <input type="file" id="csv-file-input" accept=".csv" onchange="importCSV(this)" style="display:none">
         </div>
+   <button class="reset-btn" onclick="resetEverything()">🧹 Reset for New Journey</button>
+
     </div>
 
     <div id="page-piggy" class="page">
@@ -270,7 +318,9 @@
     function renderCurrencyList() {
         const div = document.getElementById('currency-list');
         const summaryBody = document.getElementById('wallet-summary-body');
-        div.innerHTML = ''; summaryBody.innerHTML = '';
+        if(!div) return;
+        div.innerHTML = ''; if(summaryBody) summaryBody.innerHTML = '';
+        
         const spentMap = {};
         appData.expenses.forEach(e => { spentMap[e.currency] = (spentMap[e.currency] || 0) + e.amount; });
 
@@ -286,15 +336,29 @@
                         <div class="wallet-flag">${flag}</div>
                         <div><div style="font-weight:800;">${code}</div><div style="font-size:12px; color:#888;">1 : ${c.rate}</div></div>
                     </div>
-                    <div class="wallet-info-right" style="text-align:right">
+                    <div class="wallet-info-right">
                         <div class="wallet-balance ${left < 0 ? 'negative' : ''}">${left.toLocaleString(undefined,{minimumFractionDigits:1})}</div>
                         <div style="font-size:11px; color:#999;">Init: ${c.initial.toLocaleString()}</div>
                     </div>
+                    <div class="wallet-del-btn" onclick="deleteWallet('${code}')">✕</div>
                 </div>`;
-            summaryBody.innerHTML += `<tr><td>${flag} ${code}</td><td>${c.initial.toLocaleString()}</td><td>${spent.toLocaleString()}</td><td style="color:${left<0?'red':'inherit'}">${left.toLocaleString()}</td></tr>`;
+            
+            if(summaryBody) summaryBody.innerHTML += `<tr><td>${flag} ${code}</td><td>${c.initial.toLocaleString()}</td><td>${spent.toLocaleString()}</td><td style="color:${left<0?'red':'inherit'}">${left.toLocaleString()}</td></tr>`;
         }
     }
 
+
+function deleteWallet(code) {
+        const hasExpenses = appData.expenses.some(e => e.currency === code);
+        if(hasExpenses) {
+            alert("This wallet has expenses! Please clear history first.");
+            return;
+        }
+        if(confirm(`Delete ${code} wallet?`)) {
+            delete appData.currencies[code];
+            saveData(); updateUI();
+        }
+    }
     function switchPage(pageId, navEl) {
         triggerHaptic();
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -304,7 +368,14 @@
         if(pageId === 'piggy') renderHistoryPage();
         if(pageId === 'currency') renderCurrencyList();
     }
-
+function resetEverything() {
+        if(confirm("確定要清空所有資料嗎？這將刪除所有錢包與記帳紀錄。")) {
+            if(confirm("這是最後一次確認！清空後資料無法找回。")) {
+                localStorage.removeItem('dora_v5_final');
+                location.reload(); 
+            }
+        }
+    }
     function renderHistoryPage() {
         const todayStr = new Date().toISOString().split('T')[0];
         let todaySum = 0, grandSum = 0;
@@ -336,9 +407,30 @@
     }
     function resetToToday() { const t = new Date().toISOString().split('T')[0]; appData.selectedDate = t; document.getElementById('ex-date').value = t; saveData(); }
     function exportCSV() {
-        let csv = "\uFEFFDate,Item,Amount,Currency,Rate,TWD\n";
-        appData.expenses.forEach(e => csv += `${e.date},${e.item},${e.amount},${e.currency},${e.rate},${e.baseAmount}\n`);
-        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Ledger_Export.csv`; a.click();
+        // 依照要求的順序：日期, 分類, 細項, 外幣, 台幣, 幣別, 匯率
+        let csv = "\uFEFFDate,Category,Description,Amount,TWD_Equiv,Currency,Rate\n";
+        
+        appData.expenses.forEach(e => {
+            let parts = e.item.split('-');
+            let category = parts[0] || "";
+            let description = parts[1] || "";
+            csv += `${e.date},${category},${description},${e.amount},${e.baseAmount},${e.currency},${e.rate}\n`;
+        });
+
+        // 加入錢包對帳摘要
+        csv += "\n--- Wallet Summary ---\n";
+        csv += "Wallet,Initial,Spent,Remaining,Rate\n";
+        
+        for(let code in appData.currencies) {
+            const c = appData.currencies[code];
+            const spent = appData.expenses.filter(e => e.currency === code).reduce((s, e) => s + e.amount, 0);
+            csv += `${code},${c.initial},${spent},${c.initial - spent},${c.rate}\n`;
+        }
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = `Ledger_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
     }
     function importCSV(input) {
         const reader = new FileReader();
