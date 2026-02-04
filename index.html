@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pocket Ledger</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pocket Ledger">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <style>
+        :root {
+            --dora-blue: #0096FF;
+            --dora-dark-blue: #0076CC;
+            --dora-red: #DD0000;
+            --dora-yellow: #FFD700;
+            --dora-bg: #F0F8FF;
+            --card-border: #E6F7FF;
+            --text-main: #333333;
+            --text-sub: #888888;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        body { 
+            background-color: var(--dora-bg); margin: 0; padding: 0; height: 100vh; 
+            display: flex; flex-direction: column; overflow: hidden;
+            padding-top: env(safe-area-inset-top); 
+        }
+
+        main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 120px; }
+
+        .page-slogan { font-size: 26px; font-weight: 800; margin: 10px 0 20px 5px; color: var(--dora-dark-blue); display: flex; align-items: center; gap: 10px; }
+
+        .card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,150,255,0.1); border: 2px solid var(--card-border); position: relative; }
+        label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 8px; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; font-size: 18px; border: 2px solid #EEE; border-radius: 12px; outline: none; background: #FAFAFA; color: var(--text-main); }
+        input:focus { border-color: var(--dora-blue); background: white; }
+
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .cat-btn { background: white; border: 2px solid #F0F0F0; border-radius: 15px; padding: 10px 0; text-align: center; font-size: 24px; cursor: pointer; }
+        .cat-btn:active { background-color: var(--card-border); border-color: var(--dora-blue); transform: scale(0.95); }
+        .cat-btn span { display: block; font-size: 11px; margin-top: 4px; color: var(--text-sub); font-weight: bold; }
+
+        /* Wallet 表格樣式 */
+        .wallet-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .wallet-table th { text-align: left; color: var(--text-sub); padding: 8px 4px; border-bottom: 1px solid #EEE; }
+        .wallet-table td { padding: 10px 4px; border-bottom: 1px solid #FAFAFA; font-weight: 500; }
+
+        /* Wallet 卡片樣式 */
+        .wallet-card { display: flex; align-items: center; justify-content: space-between; padding: 18px; background: white; border-radius: 20px; margin-bottom: 12px; border: 2px solid var(--card-border); }
+        .wallet-info-left { display: flex; align-items: center; gap: 12px; }
+        .wallet-flag { font-size: 32px; }
+        .wallet-balance { font-size: 20px; font-weight: 800; color: var(--dora-dark-blue); }
+        .wallet-balance.negative { color: var(--dora-red); }
+
+        .big-save-btn { background: var(--dora-blue); color: white; border: none; padding: 16px; width: 100%; border-radius: 50px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 0 var(--dora-dark-blue); margin-bottom: 15px; }
+        .big-save-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dora-dark-blue); }
+
+        nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(85px + env(safe-area-inset-bottom)); background: white; display: flex; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -5px 20px rgba(0,0,0,0.05); border-top-left-radius: 25px; border-top-right-radius: 25px; z-index: 1000; }
+        .nav-item { text-align: center; color: #BBB; flex: 1; font-weight: bold; font-size: 11px; padding-top: 12px; }
+        .nav-item.active { color: var(--dora-blue); }
+        .nav-icon { font-size: 24px; display: block; margin-bottom: 2px; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+        .back-today { position: absolute; right: 15px; top: 12px; font-size: 12px; color: var(--dora-blue); font-weight: bold; cursor: pointer; background: #E6F7FF; padding: 2px 8px; border-radius: 10px; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #EEE; }
+        .del-btn { color: #DDD; font-size: 18px; padding-left: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<main>
+    <div id="page-expense" class="page active">
+        <div class="page-slogan"><span>🛫</span> Track Every Penny</div>
+        <div class="card">
+            <label>📂 Tap & Choose</label>
+            <div class="category-grid" id="cat-grid"></div>
+        </div>
+        <div class="card">
+            <label>📌 Item Name</label>
+            <input type="text" id="ex-item" placeholder="👆 Tap a category or type…">
+        </div>
+        <div class="card">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:2;"><label>💰 Amount</label><input type="text" id="ex-amount" inputmode="decimal" placeholder="0.00"></div>
+                <div style="flex:1;"><label>💱 Currency</label><select id="ex-currency" onchange="updateUI()"></select></div>
+            </div>
+            <div id="wallet-hint" style="text-align:center; color:var(--dora-blue); font-weight:bold; margin-top:12px; font-size:13px;"></div>
+        </div>
+        <button class="big-save-btn" onclick="addExpense()">💸 Bye-bye little coins!</button>
+        <div class="card">
+            <label>🗓️ Log Date (Today)</label>
+            <span class="back-today" onclick="resetToToday()">🔙 Back to Today</span>
+            <input type="date" id="ex-date">
+        </div>
+    </div>
+
+    <div id="page-currency" class="page">
+        <div class="page-slogan"><span>📒</span> Start your stash</div>
+        <div class="card">
+            <label>💶 Pick a currency</label>
+            <select id="new-curr-select" onchange="handleCurrencySelect(this)">
+                <option value="">Choose currency...</option>
+                <option value="JPY">JPY 日幣 🇯🇵</option>
+                <option value="EUR">EUR 歐元 🇪🇺</option>
+                <option value="USD">USD 美金 🇺🇸</option>
+                <option value="KRW">KRW 韓圓 🇰🇷</option>
+                <option value="TWD">TWD 台幣 🇹🇼</option>
+                <option value="OTHER">Custom...</option>
+            </select>
+            <input type="text" id="new-curr-custom" placeholder="e.g. GBP" style="display:none; margin-top:10px; text-transform:uppercase;">
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <div style="flex:1"><label>💸 TWD Exchange Rate</label><input type="text" id="new-curr-rate" inputmode="decimal" placeholder="0.21"></div>
+                <div style="flex:1"><label>💵 Initial Treasure Stash</label><input type="text" id="new-curr-initial" inputmode="decimal" placeholder="50000"></div>
+            </div>
+            <button style="background:var(--dora-yellow); color:#8B4500; border:none; padding:15px; width:100%; border-radius:50px; font-size:18px; font-weight:bold; margin-top:15px; box-shadow:0 4px 0 #CCAC00;" onclick="addCurrency()">✨ Add to Treasure Bag</button>
+        </div>
+        <label style="margin-left:5px;">🛡️ My Wallets</label>
+        <div id="currency-list"></div>
+        <div class="card" style="margin-top:20px; background:#F9F9F9;">
+            <label>📡 Data Portal (PC ↔ Phone)</label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button style="background:#AAA; color:white; border:none; padding:12px; border-radius:50px; font-size:13px;" onclick="exportCSV()">📤 Export CSV</button>
+                <button style="background:var(--dora-blue); color:white; border:none; padding:12px; border-radius:50px; font-size:13px;" onclick="document.getElementById('csv-file-input').click()">📥 Import CSV</button>
+            </div>
+            <input type="file" id="csv-file-input" accept=".csv" onchange="importCSV(this)" style="display:none">
+        </div>
+    </div>
+
+    <div id="page-piggy" class="page">
+        <div class="page-slogan"><span>🕰️</span> Time Machine Ledger</div>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <div style="flex:1; background:linear-gradient(135deg, #0096FF, #66C2FF); color:white; padding:15px; border-radius:20px; text-align:center;">
+                <div style="font-size:11px; opacity:0.8;">🔔 Today's Spending</div>
+                <div style="font-size:18px; font-weight:800;">NT$ <span id="today-total">0</span></div>
+            </div>
+            <div style="flex:1; background:linear-gradient(135deg, #FF6B6B, #FF8E8E); color:white; padding:15px; border-radius:20px; text-align:center;">
+                <div style="font-size:11px; opacity:0.8;">🏆 Journey Total</div>
+                <div style="font-size:18px; font-weight:800;">NT$ <span id="grand-total">0</span></div>
+            </div>
+        </div>
+        <div class="card">
+            <label>📜 Wallet Balance</label>
+            <table class="wallet-table">
+                <thead><tr><th>Currency</th><th>Initial</th><th>Spent</th><th>Left</th></tr></thead>
+                <tbody id="wallet-summary-body"></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <label>🔍 Search History</label>
+            <input type="text" id="history-search" placeholder="✍️ Type to search loot…">
+            <div id="history-list" style="margin-top:10px;"></div>
+        </div>
+    </div>
+</main>
+
+<nav>
+    <div class="nav-item active" onclick="switchPage('expense', this)"><span class="nav-icon">🍔</span> Log Loot</div>
+    <div class="nav-item" onclick="switchPage('currency', this)"><span class="nav-icon">💵</span> Wallet</div>
+    <div class="nav-item" onclick="switchPage('piggy', this)"><span class="nav-icon">🗺️</span> History</div>
+</nav>
+
+<script>
+    // 註冊 PWA Service Worker (修正版：自動抓取完整路徑)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            // 使用 new URL 自動抓取，確保在 GitHub Pages 子目錄也能正確註冊
+            navigator.serviceWorker.register(new URL('sw.js', window.location.href))
+                .then(reg => console.log('✅ PWA Engine Ready:', reg.scope))
+                .catch(err => console.log('❌ PWA Engine Failed:', err));
+        });
+    }
+
+    let appData = { currencies: {}, expenses: [], lastCurrency: "", lastCategory: "", selectedDate: new Date().toISOString().split('T')[0] };
+    const categories = [
+        { icon: "🍴", name: "餐飲" }, { icon: "🚄", name: "交通" }, { icon: "🏥", name: "住宿" }, { icon: "🎫", name: "門票" },
+        { icon: "🛒", name: "補給" }, { icon: "🎁", name: "手信" }, { icon: "🧦", name: "裝備" }, { icon: "📦", name: "其他" }
+    ];
+    const flagMap = { "JPY":"🇯🇵", "EUR":"🇪🇺", "USD":"🇺🇸", "KRW":"🇰🇷", "TWD":"🇹🇼", "OTHER":"🏳️" };
+
+    document.addEventListener('DOMContentLoaded', () => { loadData(); renderCategories(); setupEvents(); updateUI(); });
+
+    function triggerHaptic() { if (window.navigator.vibrate) window.navigator.vibrate(10); }
+
+    function setupEvents() {
+        const amtInp = document.getElementById('ex-amount');
+        const itemInp = document.getElementById('ex-item');
+        amtInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addExpense(); } });
+        itemInp.onkeydown = (e) => { if(e.key === 'Enter') amtInp.focus(); };
+        document.getElementById('ex-date').onchange = (e) => { appData.selectedDate = e.target.value; saveData(); };
+        document.getElementById('history-search').oninput = (e) => renderHistoryList(e.target.value);
+    }
+
+    function renderCategories() {
+        const grid = document.getElementById('cat-grid');
+        grid.innerHTML = categories.map(cat => `<div class="cat-btn" onclick="selectCat('${cat.name}')">${cat.icon}<span>${cat.name}</span></div>`).join('');
+    }
+
+    function selectCat(name) {
+        triggerHaptic();
+        const itemInp = document.getElementById('ex-item');
+        itemInp.value = name + "-";
+        appData.lastCategory = name;
+        itemInp.focus();
+        const len = itemInp.value.length;
+        itemInp.setSelectionRange(len, len);
+    }
+
+    function addExpense() {
+        triggerHaptic();
+        const itemInp = document.getElementById('ex-item');
+        const amtInp = document.getElementById('ex-amount');
+        const item = itemInp.value;
+        const amount = parseFloat(amtInp.value);
+        const currency = document.getElementById('ex-currency').value;
+        const date = document.getElementById('ex-date').value;
+
+        if(!item || isNaN(amount) || !currency) return;
+        const rate = (appData.currencies[currency] && appData.currencies[currency].rate) || 0;
+        appData.expenses.unshift({ id: Date.now(), date, item, amount, currency, rate, baseAmount: Math.round(amount * rate) });
+        appData.lastCurrency = currency;
+        saveData();
+        amtInp.value = '';
+        itemInp.value = appData.lastCategory + "-";
+        updateUI();
+        itemInp.focus();
+        const len = itemInp.value.length;
+        itemInp.setSelectionRange(len, len);
+    }
+
+    function handleCurrencySelect(sel) {
+        const customInp = document.getElementById('new-curr-custom');
+        const rateInp = document.getElementById('new-curr-rate');
+        if (sel.value === 'OTHER') { customInp.style.display = 'block'; customInp.focus(); } 
+        else if (sel.value !== "") { customInp.style.display = 'none'; rateInp.focus(); }
+    }
+
+    function addCurrency() {
+        triggerHaptic();
+        let code = document.getElementById('new-curr-select').value;
+        if(code === 'OTHER') code = document.getElementById('new-curr-custom').value.toUpperCase();
+        const rate = parseFloat(document.getElementById('new-curr-rate').value);
+        const initial = parseFloat(document.getElementById('new-curr-initial').value);
+        if(!code || isNaN(rate) || isNaN(initial)) return;
+        appData.currencies[code] = { rate, initial };
+        saveData(); updateUI();
+        document.getElementById('new-curr-rate').value = '';
+        document.getElementById('new-curr-initial').value = '';
+    }
+
+    function updateUI() {
+        const sel = document.getElementById('ex-currency');
+        const currentVal = sel.value || appData.lastCurrency;
+        sel.innerHTML = Object.keys(appData.currencies).map(code => `<option value="${code}">${code}</option>`).join('');
+        if(currentVal && appData.currencies[currentVal]) sel.value = currentVal;
+        
+        const code = sel.value;
+        if(code && appData.currencies[code]) {
+            const spent = appData.expenses.filter(e => e.currency === code).reduce((s, e) => s + e.amount, 0);
+            document.getElementById('wallet-hint').innerText = `🧧 ${code} Left: ${(appData.currencies[code].initial - spent).toFixed(2)}`;
+        }
+        renderCurrencyList();
+    }
+
+    function renderCurrencyList() {
+        const div = document.getElementById('currency-list');
+        const summaryBody = document.getElementById('wallet-summary-body');
+        div.innerHTML = ''; summaryBody.innerHTML = '';
+        const spentMap = {};
+        appData.expenses.forEach(e => { spentMap[e.currency] = (spentMap[e.currency] || 0) + e.amount; });
+
+        for(let code in appData.currencies) {
+            const c = appData.currencies[code];
+            const spent = spentMap[code] || 0;
+            const left = c.initial - spent;
+            const flag = flagMap[code] || "🏳️";
+            
+            div.innerHTML += `
+                <div class="wallet-card">
+                    <div class="wallet-info-left">
+                        <div class="wallet-flag">${flag}</div>
+                        <div><div style="font-weight:800;">${code}</div><div style="font-size:12px; color:#888;">1 : ${c.rate}</div></div>
+                    </div>
+                    <div class="wallet-info-right" style="text-align:right">
+                        <div class="wallet-balance ${left < 0 ? 'negative' : ''}">${left.toLocaleString(undefined,{minimumFractionDigits:1})}</div>
+                        <div style="font-size:11px; color:#999;">Init: ${c.initial.toLocaleString()}</div>
+                    </div>
+                </div>`;
+            summaryBody.innerHTML += `<tr><td>${flag} ${code}</td><td>${c.initial.toLocaleString()}</td><td>${spent.toLocaleString()}</td><td style="color:${left<0?'red':'inherit'}">${left.toLocaleString()}</td></tr>`;
+        }
+    }
+
+    function switchPage(pageId, navEl) {
+        triggerHaptic();
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        navEl.classList.add('active');
+        if(pageId === 'piggy') renderHistoryPage();
+        if(pageId === 'currency') renderCurrencyList();
+    }
+
+    function renderHistoryPage() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        let todaySum = 0, grandSum = 0;
+        appData.expenses.forEach(e => { if(e.date === todayStr) todaySum += e.baseAmount; grandSum += e.baseAmount; });
+        document.getElementById('today-total').innerText = todaySum.toLocaleString();
+        document.getElementById('grand-total').innerText = grandSum.toLocaleString();
+        renderHistoryList(); renderCurrencyList();
+    }
+
+    function renderHistoryList(filter = '') {
+        const list = document.getElementById('history-list');
+        const filtered = appData.expenses.filter(e => e.item.toLowerCase().includes(filter.toLowerCase())).slice(0, 30);
+        list.innerHTML = filtered.map(e => `
+            <div class="list-item">
+                <div style="flex:1"><div style="font-size:11px; color:#AAA;">${e.date}</div><div style="font-size:15px; font-weight:600;">${e.item}</div></div>
+                <div style="text-align:right"><div style="font-weight:700;">${e.currency} ${e.amount}</div><div style="font-size:11px; color:#BBB;">NT$ ${e.baseAmount.toLocaleString()}</div></div>
+                <div class="del-btn" onclick="deleteEx(${e.id})">✕</div>
+            </div>`).join('');
+    }
+
+    function deleteEx(id) { if(confirm("Delete?")) { appData.expenses = appData.expenses.filter(e => e.id !== id); saveData(); renderHistoryPage(); } }
+    function saveData() { try { localStorage.setItem('dora_v5_final', JSON.stringify(appData)); } catch(e){} }
+    function loadData() {
+        try {
+            const d = localStorage.getItem('dora_v5_final');
+            if(d) { appData = JSON.parse(d); document.getElementById('ex-date').value = appData.selectedDate; }
+            else { resetToToday(); }
+        } catch(e) { resetToToday(); }
+    }
+    function resetToToday() { const t = new Date().toISOString().split('T')[0]; appData.selectedDate = t; document.getElementById('ex-date').value = t; saveData(); }
+    function exportCSV() {
+        let csv = "\uFEFFDate,Item,Amount,Currency,Rate,TWD\n";
+        appData.expenses.forEach(e => csv += `${e.date},${e.item},${e.amount},${e.currency},${e.rate},${e.baseAmount}\n`);
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Ledger_Export.csv`; a.click();
+    }
+    function importCSV(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const rows = e.target.result.split('\n').slice(1);
+            rows.forEach(row => {
+                const c = row.split(',');
+                if(c.length >= 6) appData.expenses.push({ id: Date.now()+Math.random(), date:c[0], item:c[1], amount:parseFloat(c[2]), currency:c[3], rate:parseFloat(c[4]), baseAmount:parseInt(c[5]) });
+            });
+            saveData(); updateUI(); alert("Import Done!");
+        };
+        reader.readAsText(input.files[0]);
+    }
+</script>
+</body>
+</html>
