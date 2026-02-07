@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🛫 Doraemon-Ledger PRO</title>
+    
+    <meta name="theme-color" content="#F8FAFC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Iansui&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Iansui', 'sans-serif'], mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'] },
+                    colors: {
+                        dora: { blue: '#8ED1FC', pink: '#F9A8D4', yellow: '#FDE68A', green: '#BBF7D0', purple: '#DDD6FE', bg: '#F8FAFC' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- 核心：雙層隔離架構 --- */
+        html, body {
+            height: 100vh;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 徹底禁止整體捲動 */
+            background-color: #F8FAFC;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* 頂部固定層：Input Layer */
+        #input-layer {
+            flex-shrink: 0;
+            z-index: 50;
+            background: white;
+            box-shadow: 0 10px 30px -10px rgba(142, 209, 252, 0.3);
+            border-bottom-left-radius: 2.5rem;
+            border-bottom-right-radius: 2.5rem;
+            padding-top: env(safe-area-inset-top);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        /* 內容滾動層：Scroll Layer */
+        #scroll-layer {
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 120px; /* 導覽列空間 */
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 聚焦模式：當 Input Layer 內的欄位被點擊時 */
+        #input-layer:focus-within ~ #scroll-layer {
+            filter: blur(5px) grayscale(0.5);
+            opacity: 0.4;
+            pointer-events: none;
+            transform: scale(0.98);
+        }
+
+        /* 防 iOS 自動縮放：Input 字體強制 16px */
+        input, select, textarea { font-size: 16px !important; }
+
+        /* 分類 Grid：強制 4x2 正方形 */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, auto);
+            gap: 12px;
+        }
+        .category-btn {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1.5rem;
+            transition: all 0.2s;
+        }
+        .category-btn.active {
+            background-color: #8ED1FC;
+            color: white;
+            box-shadow: 0 8px 16px rgba(142, 209, 252, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* 玻璃卡片 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: 2rem;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .nav-active { color: #8ED1FC; }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div id="input-layer">
+            <div id="dynamic-header-content">
+                </div>
+        </div>
+
+        <div id="scroll-layer" class="no-scrollbar">
+            <div id="main-content" class="px-4 pt-4">
+                </div>
+        </div>
+
+        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-[460px] bg-white/90 backdrop-blur-xl shadow-2xl rounded-full px-2 py-3 z-[60] flex justify-between items-center border border-white/60">
+            <button onclick="router.navigate('log')" class="nav-btn w-1/5 flex flex-col items-center gap-1" data-page="log">
+                <i data-lucide="pen-tool" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold">記帳</span>
+            </button>
+            <button onclick="router.navigate('wallet')" class="nav-btn w-1/5 flex flex-col items-center gap-1" data-page="wallet">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold">錢包</span>
+            </button>
+            <button onclick="router.navigate('my')" class="nav-btn w-1/5 flex flex-col items-center gap-1" data-page="my">
+                <i data-lucide="user" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold">我的</span>
+            </button>
+            <button onclick="router.navigate('history')" class="nav-btn w-1/5 flex flex-col items-center gap-1" data-page="history">
+                <i data-lucide="history" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold">歷史</span>
+            </button>
+            <button onclick="router.navigate('settings')" class="nav-btn w-1/5 flex flex-col items-center gap-1" data-page="settings">
+                <i data-lucide="settings-2" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold">設定</span>
+            </button>
+        </nav>
+    </div>
+
+    <input type="file" id="import-input" accept=".csv" style="display: none;" onchange="handleFileImport(this)">
+
+    <div id="detail-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-sm p-6 relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400"><i data-lucide="x"></i></button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+<script>
+/**
+ * 🛫 Doraemon-Ledger PRO Core
+ */
+
+const CURRENCIES = ['TWD', 'JPY', 'USD', 'EUR', 'KRW'];
+const CATEGORIES = [
+    { key: 'food', icon: "utensils", name: "餐飲", color: "bg-dora-blue" },
+    { key: 'transport', icon: "train-front", name: "交通", color: "bg-dora-green" },
+    { key: 'stay', icon: "home", name: "住宿", color: "bg-dora-yellow" },
+    { key: 'ticket', icon: "ticket", name: "門票", color: "bg-dora-pink" },
+    { key: 'supply', icon: "shopping-basket", name: "補給", color: "bg-purple-300" },
+    { key: 'gift', icon: "gift", name: "手信", color: "bg-red-300" },
+    { key: 'gear', icon: "shirt", name: "裝備", color: "bg-orange-300" },
+    { key: 'other', icon: "package", name: "其他", color: "bg-slate-300" }
+];
+
+const store = {
+    data: {
+        expenses: [],
+        roster: [
+            { uid: 'me', name: '我 (Me)', avatar: '🐯', hidden: false },
+            { uid: 'jiani', name: 'Jiani', avatar: '🌻', hidden: false },
+            { uid: 'nomad', name: 'Nomad', avatar: '⚽', hidden: false }
+        ],
+        settings: { rates: { 'TWD': 1, 'JPY': 0.21, 'USD': 32.2, 'EUR': 35, 'KRW': 0.024 } }
+    },
+    ui: {
+        page: 'log',
+        input: {
+            title: '', amount: '', currency: 'TWD', rate: 1,
+            cat: 'food', payer: 'me', selected: ['me'], 
+            date: new Date().toISOString().split('T')[0],
+            isAdvancedOpen: false
+        }
+    },
+
+    init() {
+        this.data.expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+        const savedRates = JSON.parse(localStorage.getItem('settings_rates'));
+        if(savedRates) this.data.settings.rates = savedRates;
+        this.ui.input.rate = this.data.settings.rates[this.ui.input.currency];
+        this.save();
+    },
+    save() {
+        localStorage.setItem('expenses', JSON.stringify(this.data.expenses));
+        localStorage.setItem('settings_rates', JSON.stringify(this.data.settings.rates));
+    },
+
+    // 狀態持久化 addExpense：僅重置 title 與 amount
+    addExpense() {
+        const inp = this.ui.input;
+        if(!inp.title || !inp.amount) return alert("請填寫內容與金額");
+        
+        const numAmt = parseFloat(inp.amount);
+        const shareAmt = numAmt / inp.selected.length;
+        const shares = {};
+        inp.selected.forEach(uid => shares[uid] = shareAmt);
+
+        const exp = {
+            expenseId: crypto.randomUUID(),
+            createdAt: new Date(inp.date).toISOString(),
+            title: inp.title,
+            categoryKey: inp.cat,
+            amount: numAmt,
+            currency: inp.currency,
+            appliedRate: inp.rate,
+            baseAmount: numAmt * inp.rate,
+            payerUid: inp.payer,
+            shares: shares,
+            deleted: false
+        };
+
+        this.data.expenses.unshift(exp);
+        this.save();
+        
+        // 核心邏輯：僅清空一次性欄位
+        this.ui.input.title = '';
+        this.ui.input.amount = '';
+        // 保持 cat, payer, selected, currency 等狀態
+        router.renderHeader();
+        router.renderBody();
+        lucide.createIcons();
+    },
+
+    getMember(uid) { return this.data.roster.find(r => r.uid === uid) || { name: '?', avatar: '👻' }; }
+};
+
+/**
+ * 路由與渲染：嚴格遵守雙層佈局
+ */
+const router = {
+    navigate(page) {
+        store.ui.page = page;
+        this.updateNav();
+        this.renderHeader();
+        this.renderBody();
+        lucide.createIcons();
+    },
+    updateNav() {
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            b.classList.toggle('nav-active', b.dataset.page === store.ui.page);
+        });
+    },
+    renderHeader() {
+        const header = document.getElementById('dynamic-header-content');
+        if (store.ui.page === 'log') {
+            const inp = store.ui.input;
+            const payer = store.getMember(inp.payer);
+            header.innerHTML = `
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-2xl font-black text-dora-blue tracking-tighter">🛫 LOG LOOT</span>
+                        <div class="text-[10px] font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">${inp.date}</div>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-3">
+                        <div class="flex-grow bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100 focus-within:border-dora-blue focus-within:bg-white transition-all">
+                            <input type="text" placeholder="買了什麼項目？" value="${inp.title}" 
+                                oninput="store.ui.input.title=this.value" 
+                                class="w-full bg-transparent font-bold text-gray-700 placeholder-gray-300 outline-none">
+                        </div>
+                        <button onclick="cycleCurrency()" class="w-24 bg-dora-yellow/30 rounded-2xl flex flex-col items-center justify-center border border-dora-yellow/50 active:scale-95 transition-transform">
+                            <span class="text-xs font-black text-gray-600">${inp.currency}</span>
+                            <span class="text-[10px] text-gray-400 font-mono">@${inp.rate}</span>
+                        </button>
+                    </div>
+
+                    <div class="flex gap-2 mb-5">
+                        <div class="flex-grow bg-gray-50 rounded-2xl px-4 py-2 border border-gray-100 focus-within:border-dora-blue focus-within:bg-white transition-all flex items-center">
+                            <span class="text-2xl font-black text-gray-300 mr-2">$</span>
+                            <input type="number" inputmode="decimal" placeholder="0" value="${inp.amount}"
+                                oninput="store.ui.input.amount=this.value"
+                                class="w-full bg-transparent text-5xl font-black text-gray-800 placeholder-gray-100 outline-none font-mono">
+                        </div>
+                        <button onclick="store.addExpense()" class="w-20 bg-dora-blue text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-90 transition-transform">
+                            <i data-lucide="send" class="w-8 h-8"></i>
+                        </button>
+                    </div>
+
+                    <div class="category-grid mb-4">
+                        ${CATEGORIES.map(c => `
+                            <button onclick="selectCategory('${c.key}')" 
+                                class="category-btn ${inp.cat === c.key ? 'active' : 'bg-gray-50 text-gray-400'}">
+                                <i data-lucide="${c.icon}" class="w-6 h-6 mb-1"></i>
+                                <span class="text-[10px] font-bold">${c.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div class="border-t border-gray-50 pt-3">
+                        <div class="flex items-center justify-between px-2 cursor-pointer" onclick="toggleAdvanced()">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">${payer.avatar} ${payer.name} 付款</span>
+                                <span class="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">${inp.selected.length} 人分攤</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-300 transition-transform ${inp.isAdvancedOpen ? 'rotate-180' : ''}"></i>
+                        </div>
+                        
+                        <div class="${inp.isAdvancedOpen ? 'max-h-[300px] opacity-100 mt-4' : 'max-h-0 opacity-0 overflow-hidden'} transition-all duration-300">
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-400 block mb-1 ml-1">修改日期</label>
+                                    <input type="date" value="${inp.date}" onchange="store.ui.input.date=this.value" class="w-full bg-gray-50 rounded-xl px-3 py-2 text-xs font-bold border-none outline-none">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-400 block mb-1 ml-1">手動匯率</label>
+                                    <input type="number" step="0.01" value="${inp.rate}" oninput="store.ui.input.rate=parseFloat(this.value)" class="w-full bg-gray-50 rounded-xl px-3 py-2 text-xs font-bold border-none outline-none font-mono">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-[10px] font-bold text-gray-400 block mb-2 ml-1">分攤成員</label>
+                                <div class="flex gap-2 overflow-x-auto no-scrollbar">
+                                    ${store.data.roster.map(r => `
+                                        <button onclick="toggleSelected('${r.uid}')" class="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border ${inp.selected.includes(r.uid) ? 'bg-dora-blue/10 border-dora-blue text-dora-blue' : 'bg-white border-gray-100 text-gray-400'}">
+                                            <span class="text-sm">${r.avatar}</span>
+                                            <span class="text-[10px] font-bold">${r.name}</span>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            const titles = { wallet: '錢包餘額', my: '統計分析', history: '時光機紀錄', settings: '系統設定' };
+            header.innerHTML = `
+                <div class="px-8 py-6 flex items-center gap-3">
+                    <div class="w-2 h-8 bg-dora-blue rounded-full"></div>
+                    <h1 class="text-2xl font-black text-gray-700">${titles[store.ui.page]}</h1>
+                </div>
+            `;
+        }
+    },
+    renderBody() {
+        const body = document.getElementById('main-content');
+        if (store.ui.page === 'log') {
+            body.innerHTML = `
+                <div class="mb-4 flex items-center justify-between px-2">
+                    <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-widest">最近三筆支出</h3>
+                </div>
+                <div class="space-y-3">
+                    ${renderExpenseList(store.data.expenses.slice(0, 3))}
+                </div>
+            `;
+        } else if (store.ui.page === 'history') {
+            body.innerHTML = `<div class="space-y-3">${renderExpenseList(store.data.expenses)}</div>`;
+        } else if (store.ui.page === 'settings') {
+            body.innerHTML = `
+                <div class="glass-card p-6 mb-4">
+                    <h4 class="text-sm font-bold text-gray-500 mb-4">資料工具</h4>
+                    <button onclick="exportFullBackup()" class="w-full py-4 bg-dora-blue/10 text-dora-blue rounded-2xl font-bold flex items-center justify-center gap-2 mb-3">
+                        <i data-lucide="download" class="w-5 h-5"></i> 完整 CSV 備份
+                    </button>
+                    <button onclick="document.getElementById('import-input').click()" class="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-bold border border-gray-100 flex items-center justify-center gap-2">
+                        <i data-lucide="upload" class="w-5 h-5"></i> 匯入備份
+                    </button>
+                </div>
+                <button onclick="if(confirm('確定清除？')){localStorage.clear();location.reload();}" class="text-xs text-red-200 underline block text-center w-full mt-10">重置所有資料</button>
+            `;
+        }
+    }
+};
+
+/**
+ * 列表渲染組件
+ */
+function renderExpenseList(list) {
+    if(list.length === 0) return `<div class="text-center py-20 text-gray-300 text-sm">尚未有任何紀錄 🍃</div>`;
+    return list.map(e => {
+        const cat = CATEGORIES.find(c => c.key === e.categoryKey) || CATEGORIES[0];
+        const p = store.getMember(e.payerUid);
+        return `
+            <div class="glass-card p-4 flex items-center justify-between shadow-sm active:scale-95 transition-all" onclick="openDetail('${e.expenseId}')">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl ${cat.color} flex items-center justify-center text-white shadow-inner">
+                        <i data-lucide="${cat.icon}" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-700">${e.title}</div>
+                        <div class="text-[10px] text-gray-400 font-bold uppercase">${p.avatar} ${p.name} 付 · ${e.createdAt.slice(5,10)}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-black text-gray-700 font-mono">$${Math.round(e.baseAmount)}</div>
+                    <div class="text-[10px] text-gray-300 font-bold">${e.amount} ${e.currency}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * 交互邏輯
+ */
+function cycleCurrency() {
+    const idx = CURRENCIES.indexOf(store.ui.input.currency);
+    store.ui.input.currency = CURRENCIES[(idx + 1) % CURRENCIES.length];
+    store.ui.input.rate = store.data.settings.rates[store.ui.input.currency];
+    router.renderHeader();
+}
+function selectCategory(key) {
+    store.ui.input.cat = key;
+    router.renderHeader();
+}
+function toggleAdvanced() {
+    store.ui.input.isAdvancedOpen = !store.ui.input.isAdvancedOpen;
+    router.renderHeader();
+}
+function toggleSelected(uid) {
+    const arr = store.ui.input.selected;
+    const idx = arr.indexOf(uid);
+    if(idx > -1) arr.splice(idx, 1); else arr.push(uid);
+    router.renderHeader();
+}
+function exportFullBackup() {
+    const headers = ["expenseId", "createdAt", "title", "category", "amount", "currency", "rate", "baseAmountTWD", "payer", "shares"];
+    const BOM = "\uFEFF";
+    let csv = "data:text/csv;charset=utf-8," + BOM + headers.join(",") + "\n";
+    store.data.expenses.forEach(e => {
+        const row = [e.expenseId, e.createdAt, `"${e.title}"`, e.categoryKey, e.amount, e.currency, e.appliedRate, e.baseAmount, e.payerUid, `"${JSON.stringify(e.shares).replace(/"/g, '""')}"`];
+        csv += row.join(",") + "\n";
+    });
+    const link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `dora_backup_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+function openDetail(id) {
+    const e = store.data.expenses.find(x => x.expenseId === id);
+    const body = document.getElementById('modal-body');
+    body.innerHTML = `
+        <h2 class="text-xl font-black mb-2">${e.title}</h2>
+        <p class="text-gray-400 text-xs mb-4">${new Date(e.createdAt).toLocaleString()}</p>
+        <div class="bg-gray-50 p-4 rounded-2xl mb-4">
+            <div class="flex justify-between mb-1"><span class="text-xs text-gray-400">原始金額</span><span class="font-bold">${e.amount} ${e.currency}</span></div>
+            <div class="flex justify-between mb-1"><span class="text-xs text-gray-400">匯率</span><span class="font-bold">@${e.appliedRate}</span></div>
+            <div class="h-[1px] bg-gray-200 my-2"></div>
+            <div class="flex justify-between items-center"><span class="text-sm font-bold text-dora-blue">總額 (TWD)</span><span class="text-2xl font-black font-mono">$${Math.round(e.baseAmount)}</span></div>
+        </div>
+        <button onclick="if(confirm('刪除？')){store.data.expenses=store.data.expenses.filter(x=>x.expenseId!=='${id}');store.save();closeModal();router.renderBody();}" class="w-full py-3 bg-red-50 text-red-500 rounded-xl font-bold text-xs">刪除交易</button>
+    `;
+    document.getElementById('detail-modal').classList.remove('hidden');
+    lucide.createIcons();
+}
+function closeModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    store.init();
+    router.navigate('log');
+    
+    // 點擊背景關閉 Modal
+    document.getElementById('detail-modal').addEventListener('click', (e) => {
+        if(e.target.id === 'detail-modal') closeModal();
+    });
+});
+</script>
+</body>
+</html>
