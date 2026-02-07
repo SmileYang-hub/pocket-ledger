@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🛫 Doraemon-Ledger</title>
+    
+    <meta name="theme-color" content="#F8FAFC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/96/doraemon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Iansui&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Iansui', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    },
+                    colors: {
+                        dora: {
+                            blue: '#8ED1FC',
+                            pink: '#F9A8D4',
+                            yellow: '#FDE68A',
+                            green: '#BBF7D0',
+                            purple: '#DDD6FE',
+                            bg: '#F8FAFC',
+                            text: '#334155'
+                        }
+                    },
+                    borderRadius: {
+                        'dora': '2.5rem',
+                    },
+                    boxShadow: {
+                        'dora': '0 10px 30px -10px rgba(142, 209, 252, 0.5)',
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Global Styles */
+        body {
+            background-color: #F8FAFC;
+            font-family: 'Iansui', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+            color: #334155;
+        }
+
+        /* Glassmorphism Card Style - Doraemon Version */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1.5px solid rgba(255, 255, 255, 0.6);
+            border-radius: 2.5rem;
+            box-shadow: 0 4px 20px rgba(142, 209, 252, 0.15);
+        }
+
+        /* Buttons & Inputs */
+        .btn-action {
+            border-radius: 999px;
+            transition: transform 0.1s;
+        }
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+
+        /* Category Grid Layout */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, auto);
+            gap: 12px;
+        }
+        .category-btn {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2rem; /* Slightly smaller than card */
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .category-btn.active {
+            background-color: #8ED1FC;
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(142, 209, 252, 0.4);
+            border: 2px solid white;
+        }
+
+        /* Scrollbar Hiding */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* App Constraint */
+        #app {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            min-height: 100vh;
+            padding-bottom: 110px; /* Navbar Space */
+            background-color: #F8FAFC;
+        }
+
+        /* Sticky Input Header */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: rgba(248, 250, 252, 0.9);
+            backdrop-filter: blur(10px);
+            padding-top: env(safe-area-inset-top);
+            border-bottom-left-radius: 2.5rem;
+            border-bottom-right-radius: 2.5rem;
+            box-shadow: 0 10px 30px -15px rgba(0,0,0,0.05);
+        }
+
+        /* Roster & Filter Scroll */
+        .h-scroll-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 4px;
+            scroll-behavior: smooth;
+        }
+
+        /* Detail Modal */
+        #detail-modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #detail-modal.hidden-modal {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        </div>
+
+    <input type="file" id="import-input" accept=".csv" style="display: none;" onchange="handleFileImport(this)">
+
+    <div id="detail-modal" class="hidden-modal fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/20 backdrop-blur-sm">
+        <div class="bg-white/90 backdrop-blur-xl w-full max-w-[400px] rounded-[2.5rem] shadow-2xl border border-white p-6 relative flex flex-col max-h-[80vh]">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="modal-content" class="overflow-y-auto no-scrollbar pt-2">
+                </div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[450px] bg-white/80 backdrop-blur-xl shadow-dora rounded-full px-2 py-3 z-50 flex justify-between items-center border border-white/60">
+        <button onclick="router.navigate('log')" class="nav-btn w-1/5 flex flex-col items-center gap-1 transition-colors" data-target="log">
+            <i data-lucide="pen-tool" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">記帳</span>
+        </button>
+        <button onclick="router.navigate('wallet')" class="nav-btn w-1/5 flex flex-col items-center gap-1 transition-colors" data-target="wallet">
+            <i data-lucide="wallet" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">錢包</span>
+        </button>
+        <button onclick="router.navigate('my')" class="nav-btn w-1/5 flex flex-col items-center gap-1 transition-colors" data-target="my">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">我的</span>
+        </button>
+        <button onclick="router.navigate('history')" class="nav-btn w-1/5 flex flex-col items-center gap-1 transition-colors" data-target="history">
+            <i data-lucide="history" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">歷史</span>
+        </button>
+        <button onclick="router.navigate('settings')" class="nav-btn w-1/5 flex flex-col items-center gap-1 transition-colors" data-target="settings">
+            <i data-lucide="settings-2" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">設定</span>
+        </button>
+    </nav>
+
+<script>
+/**
+ * 🛫 Doraemon-Ledger Core Logic (Engineering Grade Update)
+ */
+
+// --- Constants ---
+const CURRENCIES = ['TWD', 'JPY', 'USD', 'EUR', 'KRW'];
+const DEFAULT_RATES = { 'TWD': 1, 'JPY': 0.33, 'USD': 34.0, 'EUR': 35.5, 'KRW': 0.025 };
+
+const CATEGORIES = [
+    { key: 'food', icon: "utensils", name: "餐飲", color: "bg-dora-blue" },
+    { key: 'transport', icon: "train-front", name: "交通", color: "bg-dora-green" },
+    { key: 'stay', icon: "home", name: "住宿", color: "bg-dora-yellow" },
+    { key: 'ticket', icon: "ticket", name: "門票", color: "bg-dora-pink" },
+    { key: 'supply', icon: "shopping-basket", name: "補給", color: "bg-dora-purple" },
+    { key: 'gift', icon: "gift", name: "手信", color: "bg-red-300" },
+    { key: 'gear', icon: "shirt", name: "裝備", color: "bg-orange-300" },
+    { key: 'other', icon: "package", name: "其他", color: "bg-slate-400" }
+];
+
+const DEFAULT_ROSTER = [
+    { uid: " me ", name: "我 (Me)", avatar: " 🚀", weight: 1000, last_used: Date.now(), is_seed: true, hidden: false },
+    { uid: "Jiani", name: "Jiani", avatar: " 🌻", weight: 50, last_used: Date.now(), is_seed: true, hidden: false },
+    { uid: "Nomad", name: "Nomad", avatar: "⚽", weight: 40, last_used: Date.now(), is_seed: true, hidden: false },
+    { uid: "dora", name: "Dora", avatar: " 🍔", weight: 30, last_used: Date.now(), is_seed: true, hidden: false }
+];
+
+const DEFAULT_QUICK_GROUPS = [
+    { id: "all", name: "全員 All", icon: "users", members: ["all"], weight: 100 },
+    { id: "me_only", name: "僅自己 Me", icon: "user", members: ["me"], weight: 90 }
+];
+
+// --- Store ---
+const store = {
+    data: {
+        expenses: [],
+        roster: [],
+        quickGroups: [],
+        settings: {
+            rates: { ...DEFAULT_RATES }
+        }
+    },
+    ui: {
+        currentPage: 'log',
+        input: {
+            title: '',
+            amount: '',
+            currency: 'TWD',
+            rate: 1,
+            categoryId: null,
+            payerUid: 'me',
+            selectedMembers: ['me'],
+            date: new Date().toISOString().split('T')[0],
+            isAdvancedOpen: false
+        },
+        filters: {
+            category: 'all',
+            payer: 'all',
+            date: 'all'
+        }
+    },
+
+    init() {
+        this.load();
+        if (this.data.roster.length === 0) this.data.roster = DEFAULT_ROSTER;
+        if (this.data.quickGroups.length === 0) this.data.quickGroups = DEFAULT_QUICK_GROUPS;
+        this.data.roster.forEach(r => { if(r.hidden === undefined) r.hidden = false; });
+        this.save();
+    },
+
+    load() {
+        try {
+            this.data.expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            this.data.roster = JSON.parse(localStorage.getItem('roster') || '[]');
+            this.data.quickGroups = JSON.parse(localStorage.getItem('quickGroups') || '[]');
+            this.data.settings = { ...this.data.settings, ...JSON.parse(localStorage.getItem('settings') || '{}') };
+            const savedUi = JSON.parse(localStorage.getItem('uiState') || '{}');
+            if (savedUi.currency) this.ui.input.currency = savedUi.currency;
+            if (savedUi.rate) this.ui.input.rate = savedUi.rate;
+        } catch (e) { console.error(e); }
+    },
+
+    save() {
+        localStorage.setItem('expenses', JSON.stringify(this.data.expenses));
+        localStorage.setItem('roster', JSON.stringify(this.data.roster));
+        localStorage.setItem('quickGroups', JSON.stringify(this.data.quickGroups));
+        localStorage.setItem('settings', JSON.stringify(this.data.settings));
+        localStorage.setItem('uiState', JSON.stringify({
+            currency: this.ui.input.currency,
+            rate: this.ui.input.rate
+        }));
+    },
+
+    // --- Core Actions ---
+
+    addExpense(title, amount, catKey) {
+        const activeSelected = this.ui.input.selectedMembers.filter(uid => {
+            const m = this.getMember(uid);
+            return m && !m.hidden;
+        });
+
+        if (!title || !amount || !catKey || activeSelected.length === 0) return false;
+        
+        const memberCount = activeSelected.length;
+        const shareAmount = parseFloat(amount) / memberCount;
+        const shares = {};
+        activeSelected.forEach(uid => shares[uid] = shareAmount);
+
+        const now = new Date();
+        const inputDate = new Date(this.ui.input.date);
+        inputDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
+        const newExpense = {
+            expenseId: crypto.randomUUID(),
+            createdAt: inputDate.toISOString(),
+            title: title,
+            categoryKey: catKey,
+            amount: parseFloat(amount),
+            currency: this.ui.input.currency,
+            appliedRate: this.ui.input.rate,
+            baseAmount: parseFloat(amount) * this.ui.input.rate,
+            payerUid: this.ui.input.payerUid,
+            shares: shares,
+            syncStatus: 'pending',
+            deleted: false,
+            notes: ''
+        };
+
+        this.data.expenses.unshift(newExpense);
+        
+        this.data.roster = this.data.roster.map(u => {
+            if (activeSelected.includes(u.uid) || u.uid === this.ui.input.payerUid) {
+                return { ...u, weight: u.weight + 1, last_used: Date.now() };
+            }
+            return u;
+        });
+
+        this.save();
+        return true;
+    },
+
+    softDelete(id) {
+        const exp = this.data.expenses.find(e => e.expenseId === id);
+        if (exp) {
+            exp.deleted = !exp.deleted;
+            this.save();
+            render();
+            closeDetailModal();
+        }
+    },
+
+    archiveMember(uid) {
+        if(confirm("確定要隱藏此成員？")) {
+            this.data.roster = this.data.roster.map(r => 
+                r.uid === uid ? { ...r, hidden: true } : r
+            );
+            this.ui.input.selectedMembers = this.ui.input.selectedMembers.filter(id => id !== uid);
+            this.save();
+            render();
+        }
+    },
+
+    getMember(uid) {
+        return this.data.roster.find(r => r.uid === uid) || { name: 'Unknown', avatar: '👻', hidden: true };
+    },
+    
+    // --- Helper: Auto-create Roster during Import ---
+    ensureMember(uid, name, avatar) {
+        const exists = this.data.roster.find(r => r.uid === uid);
+        if (!exists && uid && name) {
+            this.data.roster.push({
+                uid: uid,
+                name: name.replace(/[:;]/g, ''), // Sanitize
+                avatar: avatar || '👤',
+                weight: 0,
+                last_used: Date.now(),
+                is_seed: false,
+                hidden: false
+            });
+        }
+    },
+
+    getCategory(key) {
+        return CATEGORIES.find(c => c.key === key) || CATEGORIES[7];
+    },
+
+    // --- Import / Export System (Engineering Grade) ---
+    
+    // 1. Export Logic: Serializes Expense + Roster context
+    exportBackupCSV() {
+        const headers = [
+            "expenseId", "createdAt", "title", "categoryKey", "currency", 
+            "amount", "appliedRate", "payerUid", "payerName", "payerAvatar", 
+            "shares_detail", "deleted", "notes"
+        ];
+        
+        const BOM = "\uFEFF";
+        let csv = "data:text/csv;charset=utf-8," + BOM + headers.join(",") + "\n";
+
+        // Helper to escape CSV fields
+        const esc = (txt) => {
+            if (txt === null || txt === undefined) return "";
+            return '"' + String(txt).replace(/"/g, '""') + '"';
+        };
+
+        this.data.expenses.forEach(e => {
+            const payer = this.getMember(e.payerUid);
+            
+            // Serialize shares: uid:name:avatar:amount
+            const sharesStr = Object.entries(e.shares).map(([uid, amt]) => {
+                const m = this.getMember(uid);
+                // Delimiter: colon(:) inside, semicolon(;) between members
+                return `${uid}:${m.name.replace(/[:;]/g, '')}:${m.avatar}:${amt}`; 
+            }).join(';');
+
+            const row = [
+                esc(e.expenseId),
+                esc(e.createdAt),
+                esc(e.title),
+                esc(e.categoryKey),
+                esc(e.currency),
+                e.amount,
+                e.appliedRate,
+                esc(e.payerUid),
+                esc(payer.name),   // Backup Payer Identity
+                esc(payer.avatar), // Backup Payer Avatar
+                esc(sharesStr),    // Self-contained Shares
+                e.deleted,
+                esc(e.notes)
+            ];
+            csv += row.join(",") + "\n";
+        });
+
+        const link = document.createElement("a");
+        link.href = encodeURI(csv);
+        link.download = `dora_backup_full_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+
+    // 2. Import Logic: Expense-Driven Roster Reconstruction
+    importFromCSV(csvText) {
+        try {
+            const lines = csvText.trim().split(/\r\n|\n/);
+            if (lines.length < 2) throw new Error("File empty");
+
+            // Simple regex to split CSV by comma, ignoring commas inside quotes
+            const splitCSV = (str) => {
+                const arr = [];
+                let quote = false;
+                let col = "";
+                for (let c of str) {
+                    if (c === '"') { quote = !quote; continue; }
+                    if (c === ',' && !quote) { arr.push(col); col = ""; continue; }
+                    col += c;
+                }
+                arr.push(col);
+                return arr;
+            };
+
+            const headerMap = {};
+            const headers = splitCSV(lines[0]);
+            headers.forEach((h, i) => headerMap[h.trim()] = i);
+
+            // Validation: Check Contract
+            if (headerMap['expenseId'] === undefined || headerMap['shares_detail'] === undefined) {
+                alert("CSV 格式不符：缺少關鍵欄位 (expenseId / shares_detail)");
+                return;
+            }
+
+            let importCount = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                const row = splitCSV(lines[i]);
+                if (row.length < headers.length) continue;
+
+                const getVal = (key) => row[headerMap[key]];
+
+                const expenseId = getVal('expenseId');
+                const payerUid = getVal('payerUid');
+                const payerName = getVal('payerName');
+                const payerAvatar = getVal('payerAvatar');
+                const sharesStr = getVal('shares_detail');
+
+                // A. Rehydrate Payer (Roster)
+                this.ensureMember(payerUid, payerName, payerAvatar);
+
+                // B. Rehydrate Shares & Members
+                const shares = {};
+                if (sharesStr) {
+                    sharesStr.split(';').forEach(item => {
+                        if(!item) return;
+                        const parts = item.split(':');
+                        if (parts.length >= 4) {
+                            const [sUid, sName, sAvt, sAmt] = parts;
+                            this.ensureMember(sUid, sName, sAvt);
+                            shares[sUid] = parseFloat(sAmt);
+                        }
+                    });
+                }
+
+                // C. Construct Expense Object
+                const expense = {
+                    expenseId: expenseId,
+                    createdAt: getVal('createdAt'),
+                    title: getVal('title'),
+                    categoryKey: getVal('categoryKey'),
+                    amount: parseFloat(getVal('amount')),
+                    currency: getVal('currency'),
+                    appliedRate: parseFloat(getVal('appliedRate')),
+                    baseAmount: parseFloat(getVal('amount')) * parseFloat(getVal('appliedRate')), // Recalculate base
+                    payerUid: payerUid,
+                    shares: shares,
+                    syncStatus: 'imported',
+                    deleted: getVal('deleted') === 'true',
+                    notes: getVal('notes') || ''
+                };
+
+                // D. Upsert (Overwrite if ID exists, Add if not)
+                const existingIdx = this.data.expenses.findIndex(e => e.expenseId === expenseId);
+                if (existingIdx !== -1) {
+                    this.data.expenses[existingIdx] = expense;
+                } else {
+                    this.data.expenses.unshift(expense);
+                }
+                importCount++;
+            }
+
+            this.save();
+            alert(`匯入成功！共更新/新增 ${importCount} 筆交易。\n頁面將自動重新整理。`);
+            location.reload();
+
+        } catch (e) {
+            console.error(e);
+            alert("匯入失敗：檔案格式錯誤或已損毀。\n" + e.message);
+        }
+    },
+
+    // --- Calculators ---
+    
+    getWalletBalances() {
+        const balances = {};
+        this.data.roster.filter(r => !r.hidden && r.uid !== 'me').forEach(r => balances[r.uid] = 0);
+
+        this.data.expenses.filter(e => !e.deleted).forEach(e => {
+            const rate = e.appliedRate;
+            const myShare = (e.shares['me'] || 0) * rate;
+
+            if (e.payerUid === 'me') {
+                for (const [uid, share] of Object.entries(e.shares)) {
+                    if (uid !== 'me') {
+                        if (balances[uid] !== undefined) {
+                            balances[uid] += (share * rate);
+                        } else {
+                             if (!this.getMember(uid).hidden) balances[uid] = (balances[uid] || 0) + (share * rate);
+                        }
+                    }
+                }
+            } else {
+                if (e.payerUid !== 'me') {
+                    if (e.shares['me']) {
+                        if (balances[e.payerUid] !== undefined) {
+                            balances[e.payerUid] -= myShare;
+                        }
+                    }
+                }
+            }
+        });
+        return balances;
+    },
+
+    getMyStats() {
+        let outflow = 0;
+        let consumption = 0;
+        this.data.expenses.filter(e => !e.deleted).forEach(e => {
+            const rate = e.appliedRate;
+            if (e.payerUid === 'me') outflow += (e.amount * rate);
+            if (e.shares['me']) consumption += (e.shares['me'] * rate);
+        });
+        return { outflow, consumption };
+    },
+
+    // --- Interactions ---
+
+    toggleAdvanced() {
+        this.ui.input.isAdvancedOpen = !this.ui.input.isAdvancedOpen;
+        render();
+    },
+
+    cyclePayer() {
+        const visibleRoster = this.data.roster.filter(r => !r.hidden);
+        const currentIdx = visibleRoster.findIndex(r => r.uid === this.ui.input.payerUid);
+        let nextIdx = 0;
+        if(currentIdx !== -1) {
+            nextIdx = (currentIdx + 1) % visibleRoster.length;
+        }
+        this.ui.input.payerUid = visibleRoster[nextIdx].uid;
+        render();
+    },
+
+    cycleCurrency() {
+        const idx = CURRENCIES.indexOf(this.ui.input.currency);
+        const nextCurr = CURRENCIES[(idx + 1) % CURRENCIES.length];
+        this.ui.input.currency = nextCurr;
+        this.ui.input.rate = this.data.settings.rates[nextCurr] || 1;
+        render();
+    }
+};
+
+// --- Routing ---
+const router = {
+    navigate(page) {
+        store.ui.currentPage = page;
+        // Update Nav Icons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const target = btn.dataset.target;
+            if (target === page) {
+                if(target === 'log') btn.className = 'nav-btn w-1/5 flex flex-col items-center gap-1 text-dora-blue transition-colors';
+                if(target === 'wallet') btn.className = 'nav-btn w-1/5 flex flex-col items-center gap-1 text-dora-pink transition-colors';
+                if(target === 'my') btn.className = 'nav-btn w-1/5 flex flex-col items-center gap-1 text-dora-yellow transition-colors';
+                if(target === 'history') btn.className = 'nav-btn w-1/5 flex flex-col items-center gap-1 text-dora-purple transition-colors';
+                if(target === 'settings') btn.className = 'nav-btn w-1/5 flex flex-col items-center gap-1 text-dora-green transition-colors';
+            } else {
+                btn.className = 'nav-btn w-1/5 flex flex-col items-center gap-1 text-gray-300 transition-colors';
+            }
+        });
+        render();
+        window.scrollTo(0,0);
+    }
+};
+
+// --- Render Logic ---
+
+function render() {
+    const app = document.getElementById('app');
+    switch(store.ui.currentPage) {
+        case 'log': renderLogPage(app); break;
+        case 'wallet': renderWalletPage(app); break;
+        case 'my': renderMyPage(app); break;
+        case 'history': renderHistoryPage(app); break;
+        case 'settings': renderSettingsPage(app); break;
+    }
+    lucide.createIcons();
+}
+
+// 1. Log Page
+function renderLogPage(container) {
+    const { input } = store.ui;
+    const payer = store.getMember(input.payerUid);
+    const visibleRoster = store.data.roster.filter(r => !r.hidden);
+    const dateStr = input.date.substring(5).replace('-','/');
+    const isAllSelected = visibleRoster.every(r => input.selectedMembers.includes(r.uid));
+    let groupLabel = isAllSelected ? "全員分攤" : `${input.selectedMembers.length}人分攤`;
+    if(input.selectedMembers.length === 1 && input.selectedMembers[0] === 'me') groupLabel = "私帳";
+
+    container.innerHTML = `
+        <div class="sticky-header">
+            <div class="px-6 py-4 flex items-center gap-2">
+                <span class="text-2xl">🛫</span>
+                <h1 class="text-lg font-bold text-gray-700">Doraemon Ledger</h1>
+            </div>
+
+            <div class="px-4 pb-2">
+                <div class="bg-white rounded-[2.5rem] p-5 shadow-dora border border-dora-blue/10">
+                    <input type="text" id="inp-title" value="${input.title}" 
+                        class="w-full text-lg font-bold text-gray-700 placeholder-gray-300 bg-transparent mb-2 px-1 text-center" 
+                        placeholder="購買項目 Title" 
+                        onchange="store.ui.input.title = this.value"
+                        onkeydown="if(event.key==='Enter') document.getElementById('inp-amount').focus()">
+                    <div class="h-[1px] bg-gray-100 mb-4 w-full"></div>
+                    <div class="flex gap-2 mb-4">
+                        <div class="flex-grow bg-gray-50 rounded-[1.5rem] flex items-center px-4 py-3 border border-transparent focus-within:border-dora-blue transition-colors">
+                            <span class="text-gray-400 font-bold mr-2 text-sm">$</span>
+                            <input type="number" id="inp-amount" inputmode="decimal" value="${input.amount}"
+                                class="w-full bg-transparent text-2xl font-bold text-gray-800 placeholder-gray-200"
+                                placeholder="0"
+                                oninput="store.ui.input.amount = this.value; updateRealtimeCalc();"
+                                onkeydown="if(event.key==='Enter') submitExpense()">
+                        </div>
+                        <button onclick="store.cycleCurrency()" class="w-[4.5rem] bg-dora-yellow rounded-[1.5rem] flex flex-col items-center justify-center shadow-sm active:scale-95 transition-transform">
+                            <span class="text-xs font-bold text-gray-700">${input.currency}</span>
+                            <span class="text-[10px] text-gray-500 scale-90">@${input.rate}</span>
+                        </button>
+                        <button onclick="submitExpense()" class="w-14 bg-dora-blue text-white rounded-[1.5rem] flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                            <i data-lucide="send" class="w-5 h-5 ml-1"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between px-2 cursor-pointer select-none" onclick="store.toggleAdvanced()">
+                        <div class="flex items-center gap-2 text-[10px] text-gray-400">
+                           ${!input.isAdvancedOpen ? `
+                                <span class="bg-gray-100 px-2 py-1 rounded-full border border-gray-200">${dateStr}</span>
+                                <span class="bg-gray-100 px-2 py-1 rounded-full border border-gray-200 flex items-center gap-1">${payer.avatar} ${payer.name}</span>
+                                <span class="bg-gray-100 px-2 py-1 rounded-full border border-gray-200">${groupLabel}</span>
+                           ` : '<span class="font-bold text-dora-blue ml-1">進階設定</span>'}
+                        </div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-300 transition-transform duration-300 ${input.isAdvancedOpen ? 'rotate-180' : ''}"></i>
+                    </div>
+                    <div class="${input.isAdvancedOpen ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0'} overflow-hidden transition-all duration-300 ease-in-out">
+                        <div class="mb-3">
+                            <label class="text-xs text-gray-400 ml-2">日期</label>
+                            <input type="date" value="${input.date}" onchange="store.ui.input.date = this.value" class="w-full bg-gray-50 rounded-2xl px-4 py-2 text-sm text-gray-600 mt-1 border-none">
+                        </div>
+                        <div class="flex gap-2 mb-3">
+                            <div class="w-1/2" onclick="store.cyclePayer()">
+                                <label class="text-xs text-gray-400 ml-2">支付者</label>
+                                <div class="bg-dora-purple/20 mt-1 rounded-2xl p-2.5 flex items-center gap-2 cursor-pointer active:scale-95 transition-transform border border-dora-purple/30">
+                                    <span class="text-lg">${payer.avatar}</span>
+                                    <span class="text-xs font-bold text-gray-700 truncate">${payer.name}</span>
+                                    <i data-lucide="refresh-ccw" class="w-3 h-3 ml-auto opacity-40"></i>
+                                </div>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-xs text-gray-400 ml-2">匯率</label>
+                                <input type="number" step="0.001" value="${input.rate}" 
+                                    onchange="store.ui.input.rate = parseFloat(this.value); store.save();"
+                                    class="w-full mt-1 bg-gray-50 rounded-2xl px-3 py-2.5 text-sm font-bold text-center border-none">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                             <label class="text-xs text-gray-400 ml-2 mb-1 block">分攤對象</label>
+                             <div class="h-scroll-container mb-2">
+                                ${store.data.quickGroups.map(g => `
+                                    <button onclick="selectGroup('${g.id}')" class="whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold bg-white border border-gray-200 shadow-sm active:bg-dora-blue active:text-white active:border-dora-blue transition-colors">
+                                        ${g.name}
+                                    </button>
+                                `).join('')}
+                             </div>
+                             <div class="h-scroll-container">
+                                ${visibleRoster.map(r => `
+                                    <div onclick="toggleMember('${r.uid}')" 
+                                        class="flex flex-col items-center gap-1 min-w-[50px] cursor-pointer transition-all duration-200 ${input.selectedMembers.includes(r.uid) ? 'opacity-100 scale-100' : 'opacity-40 grayscale scale-90'}">
+                                        <div class="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center text-xl border-[2.5px] ${input.selectedMembers.includes(r.uid) ? 'border-dora-blue' : 'border-transparent'}">
+                                            ${r.avatar}
+                                        </div>
+                                        <span class="text-[9px] text-gray-600 font-bold truncate max-w-[50px]">${r.name}</span>
+                                    </div>
+                                `).join('')}
+                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="realtime-calc" class="mt-2 px-4 flex justify-between text-[10px] font-bold text-gray-400 opacity-0 transition-opacity">
+                   <span>我實際: <span id="calc-me" class="text-dora-blue text-sm font-mono">0</span></span>
+                   <span>代墊: <span id="calc-others" class="text-dora-pink text-sm font-mono">0</span></span>
+                </div>
+            </div>
+        
+            <div class="px-4 mt-2 pb-2">
+                <div class="category-grid">
+                    ${CATEGORIES.map(c => `
+                        <button onclick="selectCategory('${c.key}')" 
+                            class="category-btn glass-card ${input.categoryId === c.key ? 'active ring-2 ring-dora-blue border-white' : ''}">
+                            <i data-lucide="${c.icon}" class="w-6 h-6 mb-1 ${input.categoryId === c.key ? 'text-white' : 'text-gray-400'}"></i>
+                            <span class="text-xs font-bold ${input.categoryId === c.key ? 'text-white' : 'text-gray-500'}">${c.name}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 mt-6 pb-24">
+            <h3 class="text-xs font-bold text-gray-400 mb-2 pl-2 tracking-wider">最近紀錄</h3>
+            <div class="flex flex-col">
+                ${renderExpenseList(store.data.expenses.filter(e=>!e.deleted).slice(0,3))}
+            </div>
+        </div>
+    `;
+}
+
+// 2. Wallet Page
+function renderWalletPage(container) {
+    const balances = store.getWalletBalances();
+    const sortedUids = Object.keys(balances).sort((a,b) => balances[b] - balances[a]);
+
+    let html = `
+        <div class="pt-10 px-6 pb-24">
+            <div class="flex items-center gap-2 mb-6">
+                <div class="p-3 bg-dora-pink/20 rounded-full text-dora-pink"><i data-lucide="wallet" class="w-6 h-6"></i></div>
+                <h1 class="text-2xl font-bold text-gray-800">錢包道具</h1>
+            </div>
+            <div class="grid gap-4">
+    `;
+
+    if (sortedUids.length === 0) {
+        html += `<div class="glass-card p-8 text-center text-gray-400 text-sm">目前沒有任何欠款 🎉</div>`;
+    } else {
+        sortedUids.forEach(uid => {
+            const bal = Math.round(balances[uid]);
+            if (bal === 0) return;
+            const member = store.getMember(uid);
+            const isOweMe = bal > 0;
+            const cardClass = isOweMe ? 'bg-dora-green/10 border-dora-green/30' : 'bg-red-50 border-red-100';
+            const textClass = isOweMe ? 'text-green-600' : 'text-red-500';
+
+            html += `
+                <div class="glass-card p-5 flex items-center justify-between ${cardClass}">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-2xl shadow-sm border border-white">
+                            ${member.avatar}
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-700 text-lg">${member.name}</div>
+                            <div class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block mt-1">
+                                ${isOweMe ? '欠我錢' : '我欠他'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold ${textClass} font-mono tracking-tight">${isOweMe ? '+' : ''}${bal}</div>
+                        <button onclick="settleUp('${uid}', ${bal})" class="mt-2 text-[10px] bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 text-gray-500 active:bg-gray-100 active:scale-95 transition-transform font-bold">
+                            結清
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+    container.innerHTML = html;
+}
+
+// 3. My Page
+function renderMyPage(container) {
+    const stats = store.getMyStats();
+    const myTxns = store.data.expenses
+        .filter(e => !e.deleted && (e.payerUid === 'me' || e.shares['me']))
+        .slice(0, 20);
+
+    container.innerHTML = `
+        <div class="pt-8 px-4 pb-24">
+            <div class="flex gap-3 mb-6">
+                <div class="w-1/2 bg-white/60 p-5 rounded-[2.5rem] border border-white shadow-glass backdrop-blur-md">
+                    <div class="flex items-center gap-2 mb-2 text-dora-blue">
+                        <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Net Use</span>
+                    </div>
+                    <div class="text-2xl font-bold text-gray-700 font-mono">$${Math.round(stats.consumption)}</div>
+                    <div class="text-[10px] text-gray-400 mt-1">實際消費 (Base)</div>
+                </div>
+                <div class="w-1/2 bg-white/60 p-5 rounded-[2.5rem] border border-white shadow-glass backdrop-blur-md">
+                    <div class="flex items-center gap-2 mb-2 text-dora-pink">
+                        <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Outflow</span>
+                    </div>
+                    <div class="text-2xl font-bold text-gray-700 font-mono">$${Math.round(stats.outflow)}</div>
+                    <div class="text-[10px] text-gray-400 mt-1">現金流出 (含墊付)</div>
+                </div>
+            </div>
+            <h3 class="pl-2 text-xs font-bold text-gray-400 mb-3 tracking-wider">近期活動 (My)</h3>
+            <div class="flex flex-col gap-0">
+                ${renderExpenseList(myTxns)}
+            </div>
+        </div>
+    `;
+}
+
+// 4. History Page
+function renderHistoryPage(container) {
+    const filters = store.ui.filters;
+    const roster = store.data.roster;
+    const list = store.data.expenses.filter(e => {
+        if(e.deleted) return false;
+        if(filters.category !== 'all' && e.categoryKey !== filters.category) return false;
+        if(filters.payer !== 'all' && e.payerUid !== filters.payer) return false;
+        return true;
+    });
+
+    const pillClass = (active) => `flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${active ? 'bg-dora-blue text-white border-dora-blue shadow-md' : 'bg-white text-gray-500 border-gray-200'}`;
+
+    container.innerHTML = `
+        <div class="pt-10 px-4 pb-24">
+             <div class="flex justify-between items-center mb-4 px-2">
+                <h1 class="text-xl font-bold text-gray-700">時光機記錄</h1>
+                <span class="text-[10px] bg-gray-200 px-2 py-1 rounded-full text-gray-500 font-bold">${list.length} 筆</span>
+             </div>
+             <div class="sticky top-0 z-30 bg-gray-50/90 backdrop-blur-md py-2 -mx-4 px-4 mb-4 shadow-sm border-b border-gray-100">
+                <div class="h-scroll-container">
+                    <button onclick="setFilter('all', 'all')" class="${pillClass(filters.category==='all' && filters.payer==='all')}">
+                        全部
+                    </button>
+                    ${CATEGORIES.map(c => `
+                        <button onclick="setFilter('category', '${c.key}')" class="${pillClass(filters.category===c.key)} flex items-center gap-1">
+                            <span>${c.name}</span>
+                        </button>
+                    `).join('')}
+                    <div class="w-[1px] bg-gray-300 h-6 mx-1"></div>
+                    ${roster.map(r => `
+                         <button onclick="setFilter('payer', '${r.uid}')" class="${pillClass(filters.payer===r.uid)} flex items-center gap-1">
+                            <span>${r.avatar}</span> <span>${r.name}</span>
+                        </button>
+                    `).join('')}
+                </div>
+             </div>
+             <div class="flex flex-col gap-0 min-h-[50vh]">
+                ${renderExpenseList(list, true)}
+             </div>
+        </div>
+    `;
+}
+
+// 5. Settings Page (Update: Added Import/Export)
+function renderSettingsPage(container) {
+    container.innerHTML = `
+        <div class="pt-12 px-6 pb-24">
+            <div class="flex items-center gap-2 mb-8">
+                <div class="p-3 bg-dora-green/20 rounded-full text-green-600"><i data-lucide="settings-2" class="w-6 h-6"></i></div>
+                <h1 class="text-2xl font-bold text-gray-800">設定道具</h1>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="glass-card p-6 bg-white/80">
+                    <h3 class="font-bold text-gray-600 mb-4 flex items-center gap-2 text-sm"><i data-lucide="users" class="w-4 h-4"></i> 人物名單</h3>
+                    <div class="space-y-3">
+                        ${store.data.roster.filter(r => !r.hidden).map(r => `
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xl">${r.avatar}</span>
+                                    <span class="text-sm font-bold text-gray-700">${r.name}</span>
+                                </div>
+                                ${!r.is_seed ? `<button onclick="store.archiveMember('${r.uid}')" class="text-gray-300 hover:text-red-400 p-2"><i data-lucide="eye-off" class="w-4 h-4"></i></button>` : '<span class="text-[10px] text-gray-300 bg-gray-50 px-2 py-0.5 rounded-full">Seed</span>'}
+                            </div>
+                        `).join('')}
+                        <button onclick="addRosterPrompt()" class="w-full py-3 mt-2 rounded-2xl border border-dashed border-dora-blue text-dora-blue text-xs font-bold hover:bg-dora-blue/5 transition-colors">+ 新增夥伴</button>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 bg-white/80">
+                    <h3 class="font-bold text-gray-600 mb-4 flex items-center gap-2 text-sm"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 資料備份</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportCSV('ledger')" class="bg-dora-green/20 text-green-700 py-3 rounded-2xl text-xs font-bold hover:bg-dora-green/30">
+                            <i data-lucide="table" class="w-3 h-3 inline mr-1"></i> 匯出報表
+                        </button>
+                        <button onclick="store.exportBackupCSV()" class="bg-dora-blue/20 text-blue-700 py-3 rounded-2xl text-xs font-bold hover:bg-dora-blue/30">
+                            <i data-lucide="download" class="w-3 h-3 inline mr-1"></i> 全機備份 (CSV)
+                        </button>
+                    </div>
+                    <button onclick="document.getElementById('import-input').click()" class="w-full mt-3 bg-gray-100 text-gray-500 py-3 rounded-2xl text-xs font-bold hover:bg-gray-200 transition-colors border border-gray-200">
+                        <i data-lucide="upload" class="w-3 h-3 inline mr-1"></i> 匯入備份 (還原)
+                    </button>
+                </div>
+                
+                <div class="text-center mt-12">
+                    <button onclick="resetAllData()" class="text-[10px] text-red-300 underline p-4">重置所有資料 (危險)</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// --- Component: Expense List ---
+
+function renderExpenseList(list, isHistory = false) {
+    if (!list || list.length === 0) return '<div class="text-center py-12 text-gray-400 text-xs tracking-widest">沒有找到相關紀錄</div>';
+
+    return list.map(e => {
+        const cat = store.getCategory(e.categoryKey);
+        const payer = store.getMember(e.payerUid);
+        const date = new Date(e.createdAt);
+        const dateStr = `${date.getMonth()+1}/${date.getDate()}`;
+        const baseAmount = Math.round(e.amount * e.appliedRate);
+        const showDualCurrency = e.currency !== 'TWD';
+
+        const shareAvatars = Object.keys(e.shares).map(uid => {
+            const m = store.getMember(uid);
+            return `<span class="text-xs opacity-70 grayscale-[0.3] hover:scale-125 transition-transform cursor-help" title="${m.name}">${m.avatar}</span>`;
+        }).join('<span class="w-1"></span>');
+
+        return `
+            <div class="glass-card mb-3 p-4 flex items-center justify-between active:scale-[0.98] transition-all cursor-pointer group relative overflow-hidden"
+                 onclick="openDetailModal('${e.expenseId}')">
+                
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-11 h-11 flex-shrink-0 rounded-full ${cat.color} flex items-center justify-center text-white shadow-sm border border-white">
+                        <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-gray-700 text-sm truncate pr-2">${e.title}</div>
+                        <div class="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                            <span class="bg-gray-100 px-1.5 rounded-md text-gray-500 font-bold">${dateStr}</span>
+                            <span>${payer.avatar} 付</span>
+                        </div>
+                        <div class="flex items-center mt-1.5 pl-0.5 overflow-hidden h-4">
+                            ${shareAvatars}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 flex-shrink-0 pl-2">
+                    <div class="text-right">
+                        <div class="text-xs font-mono font-bold text-gray-400 ${showDualCurrency ? 'block' : 'hidden'}">${e.amount} ${e.currency}</div>
+                        <div class="text-base font-mono font-black text-gray-700">$${baseAmount}</div>
+                    </div>
+                    ${isHistory ? `
+                        <button onclick="event.stopPropagation(); store.softDelete('${e.expenseId}')" 
+                                class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 hover:bg-red-100 hover:text-red-500 transition-colors z-10 border border-gray-100">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- Logic: Filter & Modal ---
+
+function setFilter(type, value) {
+    if (type === 'all') {
+        store.ui.filters.category = 'all';
+        store.ui.filters.payer = 'all';
+    } else {
+        store.ui.filters[type] = value;
+    }
+    render();
+}
+
+function openDetailModal(id) {
+    const e = store.data.expenses.find(x => x.expenseId === id);
+    if (!e) return;
+
+    const modal = document.getElementById('detail-modal');
+    const content = document.getElementById('modal-content');
+    const cat = store.getCategory(e.categoryKey);
+    const payer = store.getMember(e.payerUid);
+    const dateFull = new Date(e.createdAt).toLocaleString('zh-TW');
+
+    let sharesHtml = '';
+    for (const [uid, amt] of Object.entries(e.shares)) {
+        const m = store.getMember(uid);
+        const baseShare = Math.round(amt * e.appliedRate);
+        sharesHtml += `
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">${m.avatar}</span>
+                    <span class="text-xs font-bold text-gray-600">${m.name}</span>
+                </div>
+                <div class="text-xs font-mono text-gray-500">$${baseShare}</div>
+            </div>
+        `;
+    }
+
+    content.innerHTML = `
+        <div class="flex flex-col items-center mb-6">
+            <div class="w-16 h-16 rounded-[1.5rem] ${cat.color} flex items-center justify-center text-white shadow-lg mb-3">
+                <i data-lucide="${cat.icon}" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800 text-center leading-tight">${e.title}</h2>
+            <div class="text-xs text-gray-400 mt-1">${dateFull}</div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+             <div class="flex justify-between items-end mb-2">
+                <span class="text-xs text-gray-400">原始金額</span>
+                <span class="text-sm font-bold font-mono">${e.amount} ${e.currency}</span>
+             </div>
+             <div class="flex justify-between items-end mb-2">
+                <span class="text-xs text-gray-400">匯率</span>
+                <span class="text-sm font-mono text-gray-500">@${e.appliedRate}</span>
+             </div>
+             <div class="h-[1px] bg-gray-200 my-2"></div>
+             <div class="flex justify-between items-end">
+                <span class="text-xs text-dora-blue font-bold">台幣總額</span>
+                <span class="text-2xl font-black font-mono text-gray-800">$${Math.round(e.amount * e.appliedRate)}</span>
+             </div>
+        </div>
+        <div class="mb-4">
+            <h3 class="text-xs font-bold text-gray-400 mb-2 pl-1">支付者</h3>
+            <div class="bg-white border border-gray-100 rounded-2xl p-3 flex items-center gap-3">
+                <span class="text-2xl">${payer.avatar}</span>
+                <span class="font-bold text-gray-700">${payer.name}</span>
+                <span class="ml-auto text-xs bg-dora-purple/20 text-dora-purple px-2 py-1 rounded-full font-bold">Payer</span>
+            </div>
+        </div>
+        <div class="mb-4">
+            <h3 class="text-xs font-bold text-gray-400 mb-2 pl-1">分攤明細</h3>
+            <div class="bg-white border border-gray-100 rounded-2xl px-4 py-1">
+                ${sharesHtml}
+            </div>
+        </div>
+        ${e.deleted ? '<div class="text-center text-red-400 text-xs font-bold py-2">⚠️ 此交易已刪除</div>' : 
+        `<button onclick="store.softDelete('${e.expenseId}')" class="w-full py-3 rounded-2xl bg-red-50 text-red-500 font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> 刪除此交易
+         </button>`}
+    `;
+    modal.classList.remove('hidden-modal');
+}
+
+function closeDetailModal() {
+    document.getElementById('detail-modal').classList.add('hidden-modal');
+}
+
+// --- Logic: Helpers & CSV ---
+
+function selectCategory(key) {
+    store.ui.input.categoryId = key;
+    render();
+}
+
+function selectGroup(groupId) {
+    const group = store.data.quickGroups.find(g => g.id === groupId);
+    if (!group) return;
+    const visibleUids = store.data.roster.filter(r => !r.hidden).map(r => r.uid);
+    if (group.id === 'all') {
+        store.ui.input.selectedMembers = visibleUids;
+    } else {
+        store.ui.input.selectedMembers = group.members.filter(uid => visibleUids.includes(uid));
+    }
+    render();
+    updateRealtimeCalc();
+}
+
+function toggleMember(uid) {
+    const idx = store.ui.input.selectedMembers.indexOf(uid);
+    if (idx >= 0) {
+        store.ui.input.selectedMembers.splice(idx, 1);
+    } else {
+        store.ui.input.selectedMembers.push(uid);
+    }
+    render();
+    updateRealtimeCalc();
+}
+
+function updateRealtimeCalc() {
+    const amt = parseFloat(store.ui.input.amount) || 0;
+    const rate = store.ui.input.rate;
+    const count = store.ui.input.selectedMembers.length || 1;
+    const perPerson = (amt * rate) / count;
+    
+    const elContainer = document.getElementById('realtime-calc');
+    if (amt > 0) {
+        elContainer.style.opacity = '1';
+        if (store.ui.input.selectedMembers.includes('me')) {
+            document.getElementById('calc-me').innerText = Math.round(perPerson);
+            document.getElementById('calc-others').innerText = Math.round((amt * rate) - perPerson);
+        } else {
+            document.getElementById('calc-me').innerText = '0';
+            document.getElementById('calc-others').innerText = Math.round(amt * rate);
+        }
+    } else {
+        elContainer.style.opacity = '0';
+    }
+}
+
+function submitExpense() {
+    const { title, amount, categoryId } = store.ui.input;
+    if (!title) { alert('請輸入項目名稱'); return; }
+    if (!amount) { alert('請輸入金額'); return; }
+    if (!categoryId) { alert('請選擇分類'); return; }
+
+    if(store.addExpense(title, amount, categoryId)){
+        store.ui.input.title = '';
+        store.ui.input.amount = '';
+        store.ui.input.isAdvancedOpen = false;
+        render();
+        setTimeout(() => {
+            window.scrollTo(0,0);
+            document.getElementById('inp-title').focus();
+        }, 100);
+    } else {
+        alert("記帳失敗，請檢查成員選擇");
+    }
+}
+
+function settleUp(uid, amount) {
+    const name = store.getMember(uid).name;
+    if(confirm(`確認 ${name} 的帳款已結清？`)) {
+        const settlementId = crypto.randomUUID();
+        const expense = {
+            expenseId: settlementId,
+            createdAt: new Date().toISOString(),
+            title: `結清: ${name}`,
+            categoryKey: 'other',
+            amount: Math.abs(amount),
+            baseAmount: Math.abs(amount),
+            currency: 'TWD',
+            appliedRate: 1,
+            payerUid: amount > 0 ? uid : 'me',
+            shares: { [amount > 0 ? 'me' : uid]: Math.abs(amount) },
+            syncStatus: 'local',
+            deleted: false,
+            notes: 'Settlement'
+        };
+        store.data.expenses.unshift(expense);
+        store.save();
+        render();
+    }
+}
+
+function addRosterPrompt() {
+    const name = prompt("輸入新成員名字:");
+    if(name) {
+        const id = 'user_' + Date.now();
+        store.data.roster.push({
+            uid: id, name: name, avatar: "🙂", weight: 0, last_used: Date.now(), is_seed: false, hidden: false
+        });
+        store.save();
+        render();
+    }
+}
+
+function resetAllData() {
+    if(confirm("💥 確定要清除所有資料？這會刪除 localStorage 且無法復原！")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+// Global wrapper for file input
+function handleFileImport(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        if(confirm("確定要匯入此備份檔？\n這將會合併現有資料（相同 ID 會覆蓋）。")) {
+            store.importFromCSV(text);
+        }
+    };
+    reader.readAsText(file);
+    // Reset input
+    input.value = '';
+}
+
+// Legacy Export (Simple View)
+function exportCSV(type) {
+    if (type !== 'ledger') {
+        alert("Backup 模式已升級，請使用下方的「全機備份」功能。");
+        return;
+    }
+    const BOM = "\uFEFF";
+    let csvContent = "data:text/csv;charset=utf-8," + BOM;
+    const expenses = store.data.expenses.filter(e => !e.deleted);
+    const header = ["date", "title", "category", "payer", "total_twd", "original_amt", "currency", "my_share_twd", "others_share_twd"];
+    csvContent += header.join(",") + "\n";
+    expenses.forEach(e => {
+        const date = e.createdAt.substring(0,10);
+        const cat = store.getCategory(e.categoryKey).name;
+        const payer = store.getMember(e.payerUid).name;
+        const myShare = Math.round((e.shares['me'] || 0) * e.appliedRate);
+        const totalBase = Math.round(e.amount * e.appliedRate);
+        const othersShare = totalBase - myShare;
+        const row = [date, `"${e.title}"`, cat, payer, totalBase, e.amount, e.currency, myShare, othersShare];
+        csvContent += row.join(",") + "\n";
+    });
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `dora_ledger_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded', () => {
+    store.init();
+    render();
+    document.getElementById('detail-modal').addEventListener('click', (e) => {
+        if(e.target.id === 'detail-modal') closeDetailModal();
+    });
+});
+
+</script>
+</body>
+</html>
