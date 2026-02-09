@@ -239,15 +239,22 @@ const Core = {
 // ==========================================
 
 let AppState = {
-    currentPage: 'logloot',
-    
-    logLoot: {
-        desc: "", amount: "", currency: "JPY",
-        payer: "u001", shares: ["u001"], groupIndex: 0,
-        paymentMethod: "cash", category: "food",
-        date: new Date().toISOString().slice(0,10),
-        notes: "", isDrawerOpen: false
-    },
+   currentPage: 'logloot',
+   
+   logLoot: {
+       desc: "", 
+       amount: "", 
+       currency: "JPY",
+       payer: "u001", 
+       shares: ["u001"], 
+       groupIndex: 0,
+       paymentMethod: "cash", 
+       category: "food",
+       date: new Date().toISOString().slice(0,10),
+       notes: "", 
+       isDrawerOpen: false, // 記得這裡要加逗號
+       isAdvancedMode: false // 這裡新增一個屬性，控制模式切換
+   },
 
     history: {
         dateRange: { start: null, end: null },
@@ -305,223 +312,213 @@ function renderApp() {
 // ------------------------------------------
 // PAGE: LOG LOOT (記帳)
 // ------------------------------------------
+// PAGE: LOG LOOT (記帳) - 模式切換版 (Input Mode Switching)
+// ------------------------------------------
+
 function renderLogLoot(container) {
     const s = AppState.logLoot;
     const payerPerson = Core.getPerson(s.payer);
-    
-    // Quick Group Logic Check
+
+    // 計算 Quick Group 標籤顯示
     let groupNameDisplay = "自定義";
-    if (s.groupIndex >= 0 && s.groupIndex < QUICK_GROUPS.length) {
-        groupNameDisplay = QUICK_GROUPS[s.groupIndex].label;
-    } else {
-        // Fallback check
-        const shareStr = [...s.shares].sort().join(',');
-        if (shareStr === 'u001') groupNameDisplay = 'Solo';
-        else if (shareStr === 'u001,u002') groupNameDisplay = 'Duo';
-        else if (shareStr === 'u004') groupNameDisplay = 'Shared';
-    }
-    const isSharedMode = groupNameDisplay === 'Shared';
+    const shareStr = [...s.shares].sort().join(',');
+    if (shareStr === 'u004') groupNameDisplay = 'Shared';
+    else if (shareStr === 'u001') groupNameDisplay = 'Smile';
+    else if (shareStr === 'u002') groupNameDisplay = 'Jiani';
+    else if (shareStr === 'u003') groupNameDisplay = 'Dora';
 
     container.innerHTML = `
-        <div class="grid grid-cols-4 gap-3 mb-4 h-16">
-            <input type="text" id="inp-desc" value="${s.desc}" placeholder="項目..." 
-                oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
-                onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
-                class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
-            
-            <button onclick="cycleLogCurrency()" 
-                class="col-span-1 h-full rounded-giant bg-macaronYellow text-gray-700 font-bold shadow-sm flex items-center justify-center active:scale-95 transition-transform text-lg">
-                ${s.currency}
-            </button>
-        </div>
+        <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 border-b border-gray-100 max-w-[500px] mx-auto">
+            <div class="grid grid-cols-4 gap-3 mb-4 h-16">
+                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="項目..."
+                    oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
+                    onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
+                    class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
+                 
+                 <button onclick="cycleLogCurrency()" class="col-span-1 h-full rounded-giant bg-macaronYellow text-gray-700 font-bold shadow-sm flex items-center justify-center active:scale-95 transition-transform text-lg">
+                    ${s.currency}
+                 </button>
+            </div>
 
-        <div class="grid grid-cols-[2fr_1fr] gap-3 h-16 mb-5">
-            <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="0" 
-                oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
-                onkeydown="if(event.key==='Enter') submitExpense()"
-                class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white focus:ring-2 ring-macaronPink/50 placeholder-gray-200">
-            
-            <button id="btn-submit" onclick="submitExpense()" 
-                class="h-full rounded-giant bg-gray-200 text-gray-400 flex items-center justify-center transition-all active:scale-95">
-                <i data-lucide="banknote" class="w-8 h-8"></i>
-            </button>
-        </div>
+            <div class="grid grid-cols-[2fr_1fr] gap-3 h-16 mb-5">
+                 <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="0" 
+                    oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
+                    onkeydown="if(event.key==='Enter') submitExpense()"
+                    class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white focus:ring-2 ring-macaronPink/50 placeholder-gray-200">
+                 
+                 <button id="btn-submit" onclick="submitExpense()" class="h-full rounded-giant bg-gray-200 text-gray-400 flex items-center justify-center transition-all active:scale-95">
+                    <i data-lucide="banknote" class="w-8 h-8"></i>
+                 </button>
+            </div>
 
-        <div class="grid grid-cols-4 gap-3 mb-5">
-            ${CATEGORIES.map(c => `
-                <button onclick="setLogCategory('${c.id}')" 
-                    class="aspect-square rounded-[1.8rem] flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-90 
-                    ${s.category === c.id ? c.color + ' ring-4 ring-white ring-offset-2 ring-offset-gray-100 scale-105 shadow-md' : 'bg-white hover:bg-gray-50'}">
-                    <span class="text-2xl drop-shadow-sm">${c.icon}</span>
-                    <span class="text-[10px] text-gray-500 font-bold">${c.name}</span>
-                </button>
-            `).join('')}
-        </div>
+            <div class="grid grid-cols-4 gap-3 mb-4">
+                ${CATEGORIES.map(c => `
+                    <button onclick="setLogCategory('${c.id}')" class="aspect-square rounded-[1.8rem] flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-90 ${s.category === c.id ? c.color + ' ring-4 ring-white ring-offset-2 scale-105 shadow-md' : 'bg-white'}">
+                        <span class="text-2xl">${c.icon}</span>
+                        <span class="text-[10px] text-gray-500 font-bold">${c.name}</span>
+                    </button>
+                `).join('')}
+            </div>
 
-        <div class="glass-card px-2 py-4 relative z-20">
-            <div class="flex justify-between items-center divide-x divide-gray-200">
-                <button onclick="cycleLogPayer()" class="flex flex-col items-center w-1/3 active:opacity-70 transition-opacity">
-                    <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">PAYER</span>
-                    <div class="flex items-center gap-1">
-                        <span class="text-2xl">${payerPerson.avatar}</span>
-                        <span class="text-xs font-bold text-gray-600">${payerPerson.name}</span>
-                    </div>
-                </button>
-                <button onclick="cycleLogGroup()" class="flex flex-col items-center w-1/3 active:opacity-70 transition-opacity">
-                    <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">SHARES</span>
-                    <div class="flex items-center gap-1">
-                        <span class="text-sm font-bold ${isSharedMode ? 'text-doraBlue' : 'text-gray-600'}">
-                            ${groupNameDisplay}
-                        </span>
-                    </div>
-                </button>
-                <button onclick="cycleLogMethod()" class="flex flex-col items-center w-1/3 active:opacity-70 transition-opacity">
-                    <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">METHOD</span>
-                    <div class="flex items-center gap-1">
-                        <span class="text-xs font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
-                            ${s.paymentMethod === 'cash' ? '💵 現金' : '💳 信用卡'}
-                        </span>
-                    </div>
+            <div class="flex justify-center">
+                <button onclick="switchInputMode(true)" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <i data-lucide="chevron-down" class="w-6 h-6 text-gray-400"></i>
                 </button>
             </div>
-            <button onclick="toggleLogDrawer()" class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white rounded-full p-1 shadow border border-gray-100 z-30">
-                <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform ${s.isDrawerOpen ? 'rotate-180' : ''}"></i>
-            </button>
         </div>
 
-        <div class="drawer-content ${s.isDrawerOpen ? 'drawer-open' : ''} mt-4 px-2 space-y-4">
-            <div class="relative">
-                <input type="date" value="${s.date}" onchange="AppState.logLoot.date=this.value; updateLogLootUI()"
-                    class="w-full p-3 rounded-2xl bg-white/60 text-center text-gray-600 font-bold border-none shadow-sm">
+        <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white min-h-screen overflow-y-auto pb-40 max-w-[500px] mx-auto">
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-8">
+                    <button onclick="switchInputMode(false)" class="flex items-center text-gray-400 font-bold">
+                        <i data-lucide="chevron-up" class="w-5 h-5 mr-1"></i> 返回
+                    </button>
+                    <span class="text-lg font-bold">高級設定</span>
+                    <button onclick="switchInputMode(false)" class="bg-black text-white px-5 py-1.5 rounded-full text-sm font-bold shadow-md active:scale-95">完成</button>
+                </div>
+
+                <div class="space-y-8">
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">PAYER</label>
+                            <div class="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                                ${['u001','u002','u004'].map(uid => `
+                                    <button onclick="AppState.logLoot.payer='${uid}'; renderApp();" class="flex-1 py-2 rounded-xl text-lg transition-all ${s.payer===uid ? 'bg-white shadow-md scale-105' : 'opacity-30 grayscale'}">
+                                        ${Core.getPerson(uid).avatar}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="w-28">
+                            <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">METHOD</label>
+                            <button onclick="cycleLogMethod()" class="w-full h-[52px] bg-gray-50 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-gray-100">
+                                ${s.paymentMethod === 'cash' ? '💵' : '💳'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-3 font-bold tracking-widest ml-1">SHARES (${groupNameDisplay})</label>
+                        <div class="flex gap-4 justify-between px-2">
+                            ${ROSTER.filter(r => r.uid !== 'u004').map(r => {
+                                const isSelected = s.shares.includes(r.uid);
+                                return `
+                                <div onclick="toggleLogShareUID('${r.uid}')" class="flex flex-col items-center gap-2 cursor-pointer group">
+                                    <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-sm border-2 transition-all ${isSelected ? 'border-black bg-white scale-110 shadow-md' : 'border-transparent bg-gray-50 opacity-30 grayscale'}">
+                                        ${r.avatar}
+                                    </div>
+                                    <span class="text-[10px] font-bold ${isSelected ? 'text-black' : 'text-gray-300'}">${r.name}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">DATE</label>
+                        <input type="date" value="${s.date}" onchange="AppState.logLoot.date=this.value; updateLogLootUI()"
+                            class="w-full p-4 rounded-2xl bg-gray-50 text-gray-600 font-bold border border-gray-100 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">MEMO</label>
+                        <textarea placeholder="寫點什麼..." rows="3" oninput="AppState.logLoot.notes=this.value"
+                            class="w-full p-4 rounded-2xl bg-gray-50 text-base text-gray-600 border border-gray-100 shadow-inner resize-none outline-none">${s.notes || ''}</textarea>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white/60 rounded-2xl p-3 flex justify-center gap-3 shadow-sm">
-                ${ROSTER.filter(r => r.uid !== 'u004').map(r => {
-                    const isSelected = s.shares.includes(r.uid);
-                    return `<button onclick="toggleLogShareUID('${r.uid}')" 
-                        class="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${isSelected ? 'bg-doraBlue text-white scale-110 shadow' : 'bg-gray-200 grayscale opacity-70'}">
-                        ${r.avatar}</button>`;
-                }).join('')}
-            </div>
-            <textarea placeholder="備註..." rows="2" oninput="AppState.logLoot.notes=this.value"
-                class="w-full p-3 rounded-2xl bg-white/60 text-base text-gray-600 border-none shadow-sm resize-none"></textarea>
         </div>
+
+        <div id="ContentScrollArea" class="${s.isAdvancedMode ? 'hidden' : 'block'} pt-[340px] pb-32 max-w-[500px] mx-auto">
+             </div>
     `;
+    lucide.createIcons();
+    updateLogLootUI();
 }
 
-// 核心：局部 UI 更新，防止輸入框重繪導致焦點遺失
+// 核心：UI 狀態與摘要更新
 window.updateLogLootUI = () => {
     const footer = document.getElementById('summary-footer');
     const footerText = document.getElementById('summary-text');
     const submitBtn = document.getElementById('btn-submit');
     const s = AppState.logLoot;
 
-    // 1. Submit Button State
+    // 1. Submit 按鈕狀態判斷
     const isValid = s.desc.trim() !== "" && parseFloat(s.amount) > 0;
-    if(submitBtn) {
-        // Preserve any flash animation classes if active
-        if(!submitBtn.classList.contains('animate-flash-green')) {
-             if(isValid) {
-                submitBtn.className = "h-full rounded-giant bg-macaronPink text-white shadow-lg flex items-center justify-center transition-all active:scale-95";
-            } else {
-                submitBtn.className = "h-full rounded-giant bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed flex items-center justify-center";
-            }
+    if(submitBtn && !submitBtn.classList.contains('animate-flash-green')) {
+        if(isValid) {
+            submitBtn.className = "h-full rounded-giant bg-macaronPink text-white shadow-lg flex items-center justify-center transition-all active:scale-95";
+        } else {
+            submitBtn.className = "h-full rounded-giant bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed flex items-center justify-center";
         }
     }
 
-    // 2. Footer Summary
+    // 2. 摘要顯示邏輯 (純文字、無底框、二行化)
     if (AppState.currentPage !== 'logloot') {
-        footer.classList.add('opacity-0', 'translate-y-2');
+        footer.classList.add('opacity-0');
         return;
     }
-    
-    // Always show if on page (or only if valid data? Prompt implies "Forever show")
     footer.classList.remove('opacity-0', 'translate-y-2');
-    
-    // 摘要文字處理邏輯
+
     const dateStr = s.date.slice(5).replace('-','/');
     const payerName = (s.payer === 'u004') ? '公款' : Core.getPerson(s.payer).name;
-    const methodText = (s.paymentMethod === 'cash') ? '現金' : '信用卡'; // "卡" 改為 "信用卡"
+    const methodText = (s.paymentMethod === 'cash') ? '現金' : '信用卡';
     
-    let rate = 0;
-    if(s.paymentMethod === 'cash') {
-        const w = Core.findWallet(s.payer, s.currency);
-        rate = w ? w.rate : Core.getRate(s.currency);
-    } else { 
-        rate = Core.getRate(s.currency); 
-    }
+    let rate = (s.paymentMethod === 'cash') 
+               ? (Core.findWallet(s.payer, s.currency)?.rate || Core.getRate(s.currency)) 
+               : Core.getRate(s.currency);
 
-    // 第一行：誰付、分攤
     let line1 = "";
     if (s.payer === 'u004' && s.shares.includes('u004')) {
-        line1 = `${dateStr}，公款付，大家分攤`; // 這是你要求的順口文案
+        line1 = `${dateStr}，公款付，大家分攤`;
     } else {
         const shareAvatars = s.shares.map(u => Core.getPerson(u).avatar).join('');
         line1 = `${dateStr}，${payerName} 付，${shareAvatars} 分攤`;
     }
-    
-    // 第二行：支付細節
     let line2 = `${methodText}，${s.currency} @${rate}`;
 
-    // 渲染成兩行，文字顏色設為黑色
-    footerText.innerHTML = ` <div class="text-sm">${line1}</div> 
-<div class="text-xs opacity-75">${line2}</div> `
+    footerText.innerHTML = `
+        <div class="text-sm text-black font-bold">${line1}</div>
+        <div class="text-xs text-black opacity-60 mt-0.5">${line2}</div>
+    `;
 }
 
-// Log Loot Actions
+// 模式切換邏輯
+window.switchInputMode = (val) => {
+    AppState.logLoot.isAdvancedMode = val;
+    renderApp();
+}
+
 window.cycleLogCurrency = () => {
     const currs = Object.keys(DEFAULT_RATES);
     const idx = currs.indexOf(AppState.logLoot.currency);
     AppState.logLoot.currency = currs[(idx + 1) % currs.length];
     renderApp();
 }
-window.setLogCategory = (id) => { AppState.logLoot.category = id; renderApp(); }
-window.cycleLogPayer = () => {
-    const idx = ROSTER.findIndex(r => r.uid === AppState.logLoot.payer);
-    AppState.logLoot.payer = ROSTER[(idx + 1) % ROSTER.length].uid;
-    renderApp();
+
+window.setLogCategory = (id) => {
+    AppState.logLoot.category = id; 
+    renderApp(); 
 }
-window.cycleLogGroup = () => {
-    const s = AppState.logLoot;
-    s.groupIndex = (s.groupIndex + 1) % QUICK_GROUPS.length;
-    const group = QUICK_GROUPS[s.groupIndex];
-    if (group.name === 'Shared') {
-        s.payer = 'u004'; s.shares = ['u004']; s.paymentMethod = 'cash';
-    } else {
-        if(s.payer === 'u004') s.payer = 'u001'; 
-        s.shares = [...group.shares];
-    }
-    renderApp();
-}
+
 window.cycleLogMethod = () => {
     AppState.logLoot.paymentMethod = (AppState.logLoot.paymentMethod === 'cash') ? 'credit' : 'cash';
     renderApp();
 }
-window.toggleLogDrawer = () => { AppState.logLoot.isDrawerOpen = !AppState.logLoot.isDrawerOpen; renderApp(); }
 
-// Shares Logic + Quick Group Sync
+// 高級分攤邏輯：手動選人自動互斥掉公款 (u004)
 window.toggleLogShareUID = (uid) => {
     const s = AppState.logLoot;
-    
-    // 【關鍵修正】：如果目前名單裡只有 u004 (公款)，且使用者點擊了真人
-    // 就必須先把 u004 踢掉，否則 u004 會留在背景刪不掉
-    if (s.shares.includes('u004') && uid !== 'u004') {
+    if (uid !== 'u004') {
         s.shares = s.shares.filter(u => u !== 'u004');
     }
-
     if (s.shares.includes(uid)) {
-        // 如果點擊的對象已在名單內，且名單不只一人，則移除
-        if (s.shares.length > 1) {
-            s.shares = s.shares.filter(u => u !== uid);
-        }
+        if (s.shares.length > 1) s.shares = s.shares.filter(u => u !== uid);
     } else {
-        // 如果不在名單內，且點擊的是真人，確保 u004 不會同時存在
-        if (uid !== 'u004') {
-            s.shares = s.shares.filter(u => u !== 'u004');
-        }
         s.shares.push(uid);
     }
     renderApp();
 }
+
 window.submitExpense = () => {
     const s = AppState.logLoot;
     if(!s.desc || s.amount <= 0) return;
@@ -532,8 +529,8 @@ window.submitExpense = () => {
     if (s.paymentMethod === 'cash') {
         const w = Core.findWallet(s.payer, s.currency);
         if(!w) {
-            if (s.payer === 'u004') return alert(`請先建立公款 (u004) 的 ${s.currency} 錢包！`);
-             appliedRate = Core.getRate(s.currency);
+            if (s.payer === 'u004') return alert(`請先建立公款的 ${s.currency} 錢包！`);
+            appliedRate = Core.getRate(s.currency);
         } else {
             walletId = w.walletId;
             appliedRate = w.rate;
@@ -553,27 +550,20 @@ window.submitExpense = () => {
         notes: s.notes
     });
 
-    // Success Feedback (Visual Flash instead of Alert)
     const btn = document.getElementById('btn-submit');
-    const descInput = document.getElementById('inp-desc');
-    
-    // Reset inputs
     s.desc = ""; s.amount = ""; s.notes = "";
     
-    // Trigger animation manually
     if(btn) {
-        btn.innerHTML = '<i data-lucide="check" class="w-8 h-8"></i>';
+        btn.innerHTML = '<i data-lucide="check-circle" class="w-8 h-8"></i>';
         btn.classList.add('animate-flash-green');
     }
 
-    // Delay re-render slightly to show flash, then focus
     setTimeout(() => {
         renderApp();
         const newDesc = document.getElementById('inp-desc');
         if(newDesc) newDesc.focus(); 
     }, 400);
 }
-
 // ------------------------------------------
 // PAGE: WALLET
 // ------------------------------------------
@@ -1017,7 +1007,11 @@ function renderMy(container) {
         </div>
     `;
 }
-
+window.switchInputMode = (val) => {
+    AppState.logLoot.isAdvancedMode = val;
+    renderApp();
+    lucide.createIcons(); // 確保箭頭圖標正確載入
+};
 window.onload = function() { renderApp(); };
 
 </script>
