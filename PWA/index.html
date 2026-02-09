@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Doraemon Ledger</title>
+    <title>Doraemon Ledger V2</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -28,6 +28,15 @@
                     },
                     borderRadius: {
                         'giant': '2.5rem',
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 0.3s ease-in-out',
+                    },
+                    keyframes: {
+                        'bounce-slight': {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(0.99)' },
+                        }
                     }
                 }
             }
@@ -39,90 +48,95 @@
             background-color: #F8FAFC;
             font-family: 'Iansui', sans-serif;
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
         
-        /* 核心容器限制：手機優先，最大 500px */
+        /* 手機優先容器 */
         #app-container {
             max-width: 500px;
             margin: 0 auto;
             min-height: 100vh;
             background-color: #F8FAFC;
             position: relative;
-            padding-bottom: 100px; /* Space for Navbar */
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            padding-bottom: 110px; /* Space for Navbar */
+            box-shadow: 0 0 30px rgba(142, 209, 252, 0.1);
         }
 
-        /* 玻璃擬態 Glassmorphism */
+        /* Glassmorphism */
         .glass-card {
             background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 2.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            box-shadow: 0 8px 32px rgba(142, 209, 252, 0.1);
         }
 
         .glass-nav {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-top: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
         }
 
-        /* 隱藏捲軸但保留功能 */
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 輸入框樣式 */
         input, select, textarea {
             outline: none;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.6);
+            transition: all 0.2s;
         }
         input:focus, select:focus, textarea:focus {
             background: #fff;
             box-shadow: 0 0 0 2px #8ED1FC;
         }
 
-        /* Input Mode Layer 切換 */
-        .layer-hidden {
-            display: none !important;
+        .drawer-content {
+            transition: max-height 0.4s ease-in-out, opacity 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
         }
-        .layer-visible {
-            display: block !important;
+        .drawer-open {
+            max-height: 500px;
+            opacity: 1;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
 
 <div id="app-container">
-    <main id="main-content" class="p-4"></main>
+    <main id="main-content" class="p-4 pt-6"></main>
 
-    <nav class="fixed bottom-0 left-0 right-0 max-w-[500px] mx-auto glass-nav pb-6 pt-3 px-4 z-50 rounded-t-[2rem]">
-        <div class="flex justify-between items-center text-gray-500">
-            <button onclick="router.navigate('logloot')" class="nav-btn flex flex-col items-center gap-1 w-12" data-page="logloot">
+    <div id="summary-footer" class="fixed bottom-[90px] left-0 right-0 max-w-[500px] mx-auto text-center pointer-events-none z-40 transition-all duration-300 opacity-0 translate-y-2">
+        <span id="summary-text" class="bg-white/95 backdrop-blur px-4 py-2 rounded-full text-xs text-gray-500 font-bold shadow-lg border border-gray-100">
+        </span>
+    </div>
+
+    <nav class="fixed bottom-0 left-0 right-0 max-w-[500px] mx-auto glass-nav pb-6 pt-3 px-6 z-50 rounded-t-[2.5rem]">
+        <div class="flex justify-between items-center text-gray-400">
+            <button onclick="router.navigate('logloot')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="logloot">
                 <i data-lucide="pen-tool" class="w-6 h-6"></i>
-                <span class="text-xs">記帳</span>
+                <span class="text-[10px]">記帳</span>
             </button>
-            <button onclick="router.navigate('wallet')" class="nav-btn flex flex-col items-center gap-1 w-12" data-page="wallet">
+            <button onclick="router.navigate('wallet')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="wallet">
                 <i data-lucide="wallet" class="w-6 h-6"></i>
-                <span class="text-xs">錢包</span>
+                <span class="text-[10px]">錢包</span>
             </button>
-            <button onclick="router.navigate('my')" class="nav-btn flex flex-col items-center gap-1 w-12" data-page="my">
+            <button onclick="router.navigate('my')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="my">
                 <i data-lucide="user" class="w-6 h-6"></i>
-                <span class="text-xs">我的</span>
+                <span class="text-[10px]">我的</span>
             </button>
-            <button onclick="router.navigate('history')" class="nav-btn flex flex-col items-center gap-1 w-12" data-page="history">
+            <button onclick="router.navigate('history')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="history">
                 <i data-lucide="history" class="w-6 h-6"></i>
-                <span class="text-xs">歷史</span>
+                <span class="text-[10px]">歷史</span>
             </button>
-            <button onclick="router.navigate('settings')" class="nav-btn flex flex-col items-center gap-1 w-12" data-page="settings">
+            <button onclick="router.navigate('settings')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="settings">
                 <i data-lucide="settings" class="w-6 h-6"></i>
-                <span class="text-xs">設定</span>
+                <span class="text-[10px]">設定</span>
             </button>
         </div>
     </nav>
@@ -130,18 +144,16 @@
 
 <script>
 // ==========================================
-// 1. DATA & CONSTANTS (The Source of Truth)
+// 1. DATA & CONSTANTS
 // ==========================================
 
-// Roster (人員識別規則)
 const ROSTER = [
-    { uid: "u001", name: "Smile", avatar: "🚀", is_seed: true },
-    { uid: "u002", name: "Jiani", avatar: "🌻", is_seed: true },
-    { uid: "u003", name: "Nomad", avatar: "⚽", is_seed: true },
-    { uid: "u004", name: "Shared", avatar: "🍔", is_seed: true } // 公款
+    { uid: "u001", name: "Smile", avatar: "🚀" },
+    { uid: "u002", name: "Jiani", avatar: "🌻" },
+    { uid: "u003", name: "Nomad", avatar: "⚽" },
+    { uid: "u004", name: "Shared", avatar: "🍔" } // 公款
 ];
 
-// Categories (分類清單)
 const CATEGORIES = [
     { id: "food", icon: "🍴", name: "餐飲", color: "bg-macaronPink" },
     { id: "transport", icon: "🚄", name: "交通", color: "bg-doraBlue" },
@@ -150,196 +162,150 @@ const CATEGORIES = [
     { id: "supply", icon: "🛒", name: "補給", color: "bg-macaronPurple" },
     { id: "gift", icon: "🎁", name: "手信", color: "bg-pink-200" },
     { id: "gear", icon: "🧦", name: "裝備", color: "bg-green-200" },
-    { id: "other", icon: "📦", name: "其他", color: "bg-yellow-100" }
+    { id: "other", icon: "📦", name: "其他", color: "bg-gray-100" }
 ];
 
-// Default Rates
-const DEFAULT_RATES = {
-    "TWD": 1.00,
-    "USD": 31.50,
-    "EUR": 34.80,
-    "JPY": 0.22,
-    "KRW": 0.024
-};
+const DEFAULT_RATES = { "JPY": 0.22, "TWD": 1.00, "USD": 31.50, "EUR": 34.80, "KRW": 0.024 };
 
-// Quick Groups
 const QUICK_GROUPS = [
-    { name: "Solo", shares: ["u001"] },
-    { name: "Duo", shares: ["u001", "u002"] },
-    { name: "All", shares: ["u001", "u002", "u003"] } // 不含 u004
+    { name: "Solo", shares: ["u001"], label: "Solo" },
+    { name: "Duo", shares: ["u001", "u002"], label: "Duo" },
+    { name: "Shared", shares: ["u004"], label: "Shared" }
 ];
 
 // ==========================================
-// 2. STORAGE & CORE LOGIC (UID Iron Rule)
+// 2. CORE STORAGE & LOGIC
 // ==========================================
 
 const DB = {
-    // Helpers
     get: (key, def) => JSON.parse(localStorage.getItem(key) || JSON.stringify(def)),
     set: (key, val) => localStorage.setItem(key, JSON.stringify(val)),
-
-    // Data Access
-    getExpenses: () => DB.get('doraemon_expenses_v1', []),
-    setExpenses: (data) => DB.set('doraemon_expenses_v1', data),
     
-    getWallets: () => DB.get('doraemon_wallets_v1', []),
-    setWallets: (data) => DB.set('doraemon_wallets_v1', data),
+    getExpenses: () => DB.get('dl_expenses_v2', []),
+    setExpenses: (d) => DB.set('dl_expenses_v2', d),
     
-    getRates: () => DB.get('doraemon_currency_rates_v1', DEFAULT_RATES),
-    setRates: (data) => DB.set('doraemon_currency_rates_v1', data),
+    getWallets: () => DB.get('dl_wallets_v2', []),
+    setWallets: (d) => DB.set('dl_wallets_v2', d),
+    
+    getRates: () => DB.get('dl_rates_v2', DEFAULT_RATES),
+    setRates: (d) => DB.set('dl_rates_v2', d),
 };
 
 const Core = {
-    // 匯率查詢 (Rate Lock Logic)
-    getRate: (currency) => {
-        const rates = DB.getRates();
-        return rates[currency] || 1;
-    },
-
-    // 取得人員資料 (UI Use Only)
+    getRate: (curr) => DB.getRates()[curr] || 1,
     getPerson: (uid) => ROSTER.find(r => r.uid === uid) || { name: 'Unknown', avatar: '❓' },
     
-    // 取得錢包資料
-    getWallet: (walletId) => {
-        const wallets = DB.getWallets();
-        return wallets.find(w => w.walletId === walletId);
+    findWallet: (ownerUID, currency) => {
+        return DB.getWallets().find(w => w.ownerUID === ownerUID && w.currency === currency);
     },
 
-    // 更新錢包餘額
-    updateWalletBalance: (walletId, amountChange) => {
+    // 餘額更新邏輯 (主要用於刪除或新增時的同步，顯示時會動態計算)
+    updateWalletBalance: (walletId, delta) => {
         const wallets = DB.getWallets();
-        const idx = wallets.findIndex(w => w.walletId === walletId);
-        if (idx !== -1) {
-            wallets[idx].balance += amountChange; // amountChange 為負數代表扣款
+        const w = wallets.find(w => w.walletId === walletId);
+        if(w) {
+            w.balance += delta;
             DB.setWallets(wallets);
         }
     },
 
-    // 新增支出 (Log Loot Core)
-    addExpense: (expenseData) => {
-        const expenses = DB.getExpenses();
-        const newExpense = {
-            ...expenseData,
-            expenseId: 'e' + Date.now() + Math.random().toString(36).substr(2, 5),
+    addExpense: (data) => {
+        const exps = DB.getExpenses();
+        const newExp = { 
+            ...data, 
+            expenseId: 'e' + Date.now() + Math.random().toString(36).substr(2,4),
             createdAt: new Date().toISOString()
         };
-
-        // 現金邏輯：扣款
-        if (newExpense.paymentMethod === 'cash' && newExpense.walletId) {
-            Core.updateWalletBalance(newExpense.walletId, -newExpense.amount);
+        
+        // 扣款邏輯
+        if(newExp.paymentMethod === 'cash' && newExp.walletId) {
+            Core.updateWalletBalance(newExp.walletId, -newExp.amount);
         }
 
-        expenses.unshift(newExpense); // 新的在前面
-        DB.setExpenses(expenses);
-        return newExpense;
+        exps.unshift(newExp);
+        DB.setExpenses(exps);
     },
 
-    // 刪除支出 (History Logic)
-    deleteExpense: (expenseId) => {
-        const expenses = DB.getExpenses();
-        const exp = expenses.find(e => e.expenseId === expenseId);
-        if (!exp) return;
+    deleteExpense: (eid) => {
+        const exps = DB.getExpenses();
+        const exp = exps.find(e => e.expenseId === eid);
+        if(!exp) return;
 
-        // 現金邏輯：回補
-        if (exp.paymentMethod === 'cash' && exp.walletId) {
-            Core.updateWalletBalance(exp.walletId, exp.amount); // 加回正數
+        // 回補邏輯
+        if(exp.paymentMethod === 'cash' && exp.walletId) {
+            Core.updateWalletBalance(exp.walletId, exp.amount);
         }
 
-        const newExpenses = expenses.filter(e => e.expenseId !== expenseId);
-        DB.setExpenses(newExpenses);
-    },
-
-    // 搜尋錢包 (Cash Logic)
-    findWallet: (ownerUID, currency) => {
-        const wallets = DB.getWallets();
-        // 優先找 owner 符合且 currency 符合的
-        return wallets.find(w => w.ownerUID === ownerUID && w.currency === currency);
+        DB.setExpenses(exps.filter(e => e.expenseId !== eid));
     }
 };
 
 // ==========================================
-// 3. STATE MANAGEMENT (State Machine)
+// 3. STATE MANAGEMENT
 // ==========================================
 
-// Global App State
 let AppState = {
     currentPage: 'logloot',
     
-    // Log Loot State
     logLoot: {
-        description: "",
-        amount: "",
-        currency: "JPY", // Default
-        payer: "u001",
-        shares: ["u001"],
-        paymentMethod: "cash",
-        category: "food",
-        date: new Date().toISOString().split('T')[0],
-        notes: "",
-        isAdvanced: false
+        desc: "", amount: "", currency: "JPY",
+        payer: "u001", shares: ["u001"], groupIndex: 0,
+        paymentMethod: "cash", category: "food",
+        date: new Date().toISOString().slice(0,10),
+        notes: "", isDrawerOpen: false
     },
 
-    // History Filter State
     history: {
-        dateRange: { start: null, end: null }, // null means all
-        category: null,
-        payer: null,
-        paymentMethod: null,
-        currency: null,
-        expandedId: null // 哪一筆被展開
+        dateRange: { start: null, end: null },
+        filterIndex: { cat: 0, payer: 0, method: 0, curr: 0 },
+        expandedId: null
     },
-    
-    // Wallet Expand State
-    walletExpandedId: null,
 
-    // My Page State
-    myUid: "u001"
+    wallet: {
+        filterUid: null, // 用於 Wallet 頁面頂部篩選
+        expandedId: null
+    },
+
+    myUid: "u001",
+    myCatExpand: null
 };
 
 // ==========================================
-// 4. UI RENDERERS (Component-like)
+// 4. ROUTER & UI
 // ==========================================
 
 const router = {
     navigate: (page) => {
         AppState.currentPage = page;
         renderApp();
-        
-        // Update Nav Active State
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            if (btn.dataset.page === page) {
-                btn.classList.add('text-doraBlue');
-                btn.classList.remove('text-gray-500');
-            } else {
-                btn.classList.remove('text-doraBlue');
-                btn.classList.add('text-gray-500');
-            }
-        });
+        updateNavHighlight();
+        updateLogLootUI(); // Ensure footer visibility logic
     }
 };
 
+function updateNavHighlight() {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isActive = btn.dataset.page === AppState.currentPage;
+        btn.classList.toggle('text-doraBlue', isActive);
+        btn.classList.toggle('text-gray-400', !isActive);
+        if(isActive) btn.querySelector('i').classList.add('stroke-[3px]');
+        else btn.querySelector('i').classList.remove('stroke-[3px]');
+    });
+}
+
 function renderApp() {
     const main = document.getElementById('main-content');
-    main.innerHTML = ''; // Clear
-
+    main.innerHTML = ''; 
+    
     switch(AppState.currentPage) {
-        case 'logloot':
-            renderLogLoot(main);
-            break;
-        case 'wallet':
-            renderWallet(main);
-            break;
-        case 'my':
-            renderMy(main);
-            break;
-        case 'history':
-            renderHistory(main);
-            break;
-        case 'settings':
-            renderSettings(main);
-            break;
+        case 'logloot': renderLogLoot(main); break;
+        case 'wallet': renderWallet(main); break;
+        case 'my': renderMy(main); break;
+        case 'history': renderHistory(main); break;
+        case 'settings': renderSettings(main); break;
     }
     lucide.createIcons();
+    updateLogLootUI();
 }
 
 // ------------------------------------------
@@ -347,894 +313,683 @@ function renderApp() {
 // ------------------------------------------
 function renderLogLoot(container) {
     const s = AppState.logLoot;
-    const rate = (s.paymentMethod === 'cash') 
-        ? (Core.findWallet(s.payer, s.currency)?.rate || Core.getRate(s.currency)) // 若無錢包暫用設定匯率顯示，但實際記帳會檢查
-        : Core.getRate(s.currency);
-    
-    const twdVal = (parseFloat(s.amount) || 0) * rate;
-
-    // --- Template Helpers ---
-    const getAvatar = (uid) => Core.getPerson(uid).avatar;
-    
-    // Main Input Layer
-    const mainLayerClass = s.isAdvanced ? "hidden" : "block";
-    const advLayerClass = s.isAdvanced ? "block fixed top-0 left-0 w-full h-full bg-bgBase z-50 p-4 overflow-y-auto" : "hidden";
+    const payerPerson = Core.getPerson(s.payer);
+    const group = QUICK_GROUPS[s.groupIndex];
+    const isSharedMode = group.name === 'Shared';
 
     container.innerHTML = `
-        <div class="flex justify-between items-center mb-6 px-2">
-            <h1 class="text-2xl font-bold text-gray-700">記帳 <span class="text-sm font-normal text-gray-400">Log Loot</span></h1>
-            <button id="btn-toggle-adv" class="p-2 rounded-full bg-white shadow text-doraBlue">
-                <i data-lucide="${s.isAdvanced ? 'arrow-down' : 'settings'}" class="w-5 h-5"></i>
+        <div class="flex gap-3 mb-4">
+            <input type="text" id="inp-desc" value="${s.desc}" placeholder="項目名稱..." 
+                oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
+                onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
+                class="flex-[3] p-4 rounded-giant text-lg font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
+            
+            <button onclick="cycleLogCurrency()" 
+                class="flex-1 rounded-giant bg-macaronYellow text-gray-700 font-bold shadow-sm flex items-center justify-center active:scale-95 transition-transform">
+                ${s.currency}
             </button>
         </div>
 
-        <div id="adv-layer" class="${advLayerClass}">
-            <div class="max-w-[500px] mx-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-gray-700">高級設定</h2>
-                    <button onclick="toggleAdvanced(false)" class="p-2 rounded-full bg-white shadow">
-                        <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
-                    </button>
-                </div>
-                
-                <div class="glass-card p-6 space-y-4 mb-6">
-                    <div>
-                        <label class="block text-sm text-gray-500 mb-1">日期</label>
-                        <input type="date" id="inp-date" value="${s.date}" class="w-full p-3 rounded-xl text-center text-lg bg-white/50">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-500 mb-1">備註</label>
-                        <textarea id="inp-notes" rows="3" class="w-full p-3 rounded-xl bg-white/50" placeholder="寫點什麼...">${s.notes}</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-500 mb-2">詳細分攤 (點擊選取)</label>
-                        <div class="flex flex-wrap gap-2">
-                            ${ROSTER.map(r => `
-                                <button onclick="toggleShare('${r.uid}')" 
-                                    class="flex items-center gap-1 px-3 py-2 rounded-full border ${s.shares.includes(r.uid) ? 'bg-doraBlue text-white border-transparent' : 'bg-white text-gray-500 border-gray-200'}">
-                                    <span>${r.avatar}</span> <span>${r.name}</span>
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                <button onclick="toggleAdvanced(false)" class="w-full py-4 rounded-giant bg-doraBlue text-white text-lg shadow-lg font-bold">確認返回</button>
-            </div>
+        <div class="grid grid-cols-[2fr_1fr] gap-3 h-16 mb-5">
+            <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="0" 
+                oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
+                onkeydown="if(event.key==='Enter') submitExpense()"
+                class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white focus:ring-2 ring-macaronPink/50 placeholder-gray-200">
+            
+            <button id="btn-submit" onclick="submitExpense()" 
+                class="h-full rounded-giant bg-gray-200 text-gray-400 flex items-center justify-center transition-all active:scale-95">
+                <i data-lucide="banknote" class="w-8 h-8"></i>
+            </button>
         </div>
 
-        <div id="main-layer" class="${mainLayerClass} space-y-4">
-            
-            <div class="flex gap-3">
-                <input type="text" id="inp-desc" value="${s.description}" placeholder="項目名稱..." 
-                    class="flex-1 p-4 rounded-giant text-lg shadow-sm border-none bg-white focus:ring-2 ring-doraBlue transition-all">
-                
-                <select id="inp-curr" onchange="updateLogState('currency', this.value)" 
-                    class="w-24 p-2 rounded-giant text-center font-bold bg-macaronYellow text-gray-700 appearance-none shadow-sm">
-                    ${Object.keys(DEFAULT_RATES).map(c => `<option value="${c}" ${s.currency === c ? 'selected' : ''}>${c}</option>`).join('')}
-                </select>
-            </div>
-
-            <div class="flex gap-3 items-center">
-                <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="0" 
-                    class="flex-1 p-4 rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white focus:ring-2 ring-macaronPink transition-all">
-                
-                <button onclick="submitExpense()" class="w-16 h-16 rounded-full bg-macaronPink text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform">
-                    <i data-lucide="send" class="w-8 h-8 ml-1"></i>
+        <div class="grid grid-cols-4 gap-3 mb-5">
+            ${CATEGORIES.map(c => `
+                <button onclick="setLogCategory('${c.id}')" 
+                    class="aspect-square rounded-[1.8rem] flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-90 
+                    ${s.category === c.id ? c.color + ' ring-4 ring-white ring-offset-2 ring-offset-gray-100 scale-105 shadow-md' : 'bg-white hover:bg-gray-50'}">
+                    <span class="text-2xl drop-shadow-sm">${c.icon}</span>
+                    <span class="text-[10px] text-gray-500 font-bold">${c.name}</span>
                 </button>
-            </div>
+            `).join('')}
+        </div>
 
-            <div class="grid grid-cols-4 gap-3 mt-4">
-                ${CATEGORIES.map(c => `
-                    <button onclick="updateLogState('category', '${c.id}')" 
-                        class="aspect-square rounded-[1.5rem] flex flex-col items-center justify-center gap-1 shadow-sm transition-transform active:scale-95 
-                        ${s.category === c.id ? c.color + ' ring-2 ring-offset-1 ring-gray-300' : 'bg-white'}">
-                        <span class="text-2xl">${c.icon}</span>
-                        <span class="text-[10px] text-gray-600">${c.name}</span>
-                    </button>
-                `).join('')}
-            </div>
-
-            <div class="glass-card p-4 mt-4 flex justify-between items-center">
-                <button onclick="cyclePayer()" class="flex flex-col items-center w-1/3 border-r border-gray-200">
-                    <span class="text-xs text-gray-400 mb-1">誰付錢</span>
-                    <div class="text-2xl bounce-anim">${getAvatar(s.payer)}</div>
-                </button>
-
-                <button onclick="cycleShares()" class="flex flex-col items-center w-1/3 border-r border-gray-200">
-                    <span class="text-xs text-gray-400 mb-1">誰分攤</span>
-                    <div class="flex -space-x-2 overflow-hidden">
-                        ${s.shares.slice(0, 3).map(uid => `<span class="bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-white">${getAvatar(uid)}</span>`).join('')}
-                        ${s.shares.length > 3 ? '<span class="text-xs text-gray-400 ml-1">...</span>' : ''}
+        <div class="glass-card px-2 py-4 relative z-20">
+            <div class="flex justify-between items-center divide-x divide-gray-200">
+                <button onclick="cycleLogPayer()" class="flex flex-col items-center w-1/3 active:opacity-70 transition-opacity">
+                    <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">PAYER</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-2xl">${payerPerson.avatar}</span>
+                        <span class="text-xs font-bold text-gray-600">${payerPerson.name}</span>
                     </div>
                 </button>
-
-                <button onclick="togglePayment()" class="flex flex-col items-center w-1/3">
-                    <span class="text-xs text-gray-400 mb-1">方式</span>
-                    <div class="text-sm font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
-                        ${s.paymentMethod === 'cash' ? '💵 現金' : '💳 信用卡'}
+                <button onclick="cycleLogGroup()" class="flex flex-col items-center w-1/3 active:opacity-70 transition-opacity">
+                    <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">SHARES</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm font-bold ${isSharedMode ? 'text-doraBlue' : 'text-gray-600'}">
+                            ${group.name === 'Shared' ? '🍔 Shared' : (group.name === 'Solo' ? '🚀 Solo' : '🚀🌻 Duo')}
+                        </span>
+                    </div>
+                </button>
+                <button onclick="cycleLogMethod()" class="flex flex-col items-center w-1/3 active:opacity-70 transition-opacity">
+                    <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">METHOD</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
+                            ${s.paymentMethod === 'cash' ? '💵 現金' : '💳 信用卡'}
+                        </span>
                     </div>
                 </button>
             </div>
+            <button onclick="toggleLogDrawer()" class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white rounded-full p-1 shadow border border-gray-100 z-30">
+                <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform ${s.isDrawerOpen ? 'rotate-180' : ''}"></i>
+            </button>
+        </div>
 
-            <div class="text-center mt-4 px-2">
-                <p class="text-xs text-gray-800 font-mono">
-                    ${s.date.slice(5).replace('-','/')}, ${Core.getPerson(s.payer).name}支付, 
-                    ${s.shares.length}人分, 
-                    ${s.paymentMethod === 'cash' ? '現金' : '信用'}, 
-                    ${s.currency} @${rate.toFixed(2)}
-                    <br>
-                    <span class="text-gray-400">約 TWD ${Math.round(twdVal).toLocaleString()}</span>
-                </p>
+        <div class="drawer-content ${s.isDrawerOpen ? 'drawer-open' : ''} mt-4 px-2 space-y-4">
+            <div class="relative">
+                <input type="date" value="${s.date}" onchange="AppState.logLoot.date=this.value; updateLogLootUI()"
+                    class="w-full p-3 rounded-2xl bg-white/60 text-center text-gray-600 font-bold border-none shadow-sm">
             </div>
+            <div class="bg-white/60 rounded-2xl p-3 flex justify-center gap-3 shadow-sm ${isSharedMode ? 'opacity-50 pointer-events-none grayscale' : ''}">
+                ${ROSTER.filter(r => r.uid !== 'u004').map(r => {
+                    const isSelected = s.shares.includes(r.uid);
+                    return `<button onclick="toggleLogShareUID('${r.uid}')" 
+                        class="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${isSelected ? 'bg-doraBlue text-white scale-110 shadow' : 'bg-gray-200 grayscale opacity-70'}">
+                        ${r.avatar}</button>`;
+                }).join('')}
+            </div>
+            <textarea placeholder="備註..." rows="2" oninput="AppState.logLoot.notes=this.value"
+                class="w-full p-3 rounded-2xl bg-white/60 text-sm text-gray-600 border-none shadow-sm resize-none"></textarea>
         </div>
     `;
+}
 
-    // Event Bindings for Inputs
-    document.getElementById('btn-toggle-adv').onclick = () => toggleAdvanced(!s.isAdvanced);
-    
-    // Focus Flow Logic
-    const descInput = document.getElementById('inp-desc');
-    const amtInput = document.getElementById('inp-amt');
-    
-    if(!s.isAdvanced) {
-        // Bind updates
-        descInput.oninput = (e) => AppState.logLoot.description = e.target.value;
-        amtInput.oninput = (e) => AppState.logLoot.amount = e.target.value;
-        
-        // Keydown flow
-        descInput.onkeydown = (e) => {
-            if(e.key === 'Enter') {
-                e.preventDefault();
-                amtInput.focus();
-            }
-        };
-        amtInput.onkeydown = (e) => {
-            if(e.key === 'Enter') {
-                e.preventDefault();
-                submitExpense();
-                descInput.focus();
-            }
-        };
-    } else {
-        // Advanced inputs bindings
-        document.getElementById('inp-date').onchange = (e) => AppState.logLoot.date = e.target.value;
-        document.getElementById('inp-notes').oninput = (e) => AppState.logLoot.notes = e.target.value;
+// 解決輸入框跳掉問題：只更新必要 UI，不重繪
+window.updateLogLootUI = () => {
+    const footer = document.getElementById('summary-footer');
+    const footerText = document.getElementById('summary-text');
+    const submitBtn = document.getElementById('btn-submit');
+    const s = AppState.logLoot;
+
+    // 1. Submit Button State
+    const isValid = s.desc.trim() !== "" && parseFloat(s.amount) > 0;
+    if(submitBtn) {
+        if(isValid) {
+            submitBtn.className = "h-full rounded-giant bg-macaronPink text-white shadow-lg flex items-center justify-center transition-all active:scale-95";
+        } else {
+            submitBtn.className = "h-full rounded-giant bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed flex items-center justify-center";
+        }
     }
+
+    // 2. Footer Summary
+    if (AppState.currentPage !== 'logloot' || (!s.amount && !s.desc)) {
+        footer.classList.add('opacity-0', 'translate-y-2');
+        return;
+    }
+    
+    footer.classList.remove('opacity-0', 'translate-y-2');
+    
+    const date = s.date.slice(5).replace('-','/');
+    const payerName = (s.payer === 'u004') ? '公款' : Core.getPerson(s.payer).name;
+    let shareText = "";
+    if (JSON.stringify(s.shares.sort()) === JSON.stringify(["u004"])) {
+        shareText = "一起分攤";
+    } else if (s.shares.length === 1 && s.shares[0] === s.payer) {
+        shareText = "Solo";
+    } else {
+        shareText = s.shares.map(u => Core.getPerson(u).avatar).join('');
+    }
+    
+    // Resolve Rate for display
+    let rate = 0;
+    if(s.paymentMethod === 'cash') {
+        const w = Core.findWallet(s.payer, s.currency);
+        rate = w ? w.rate : Core.getRate(s.currency);
+    } else {
+        rate = Core.getRate(s.currency);
+    }
+
+    footerText.innerHTML = `${date}，${payerName}付，${shareText}，${s.paymentMethod==='cash'?'現金':'卡'} ${s.currency} @${rate}`;
 }
 
 // Log Loot Actions
-function updateLogState(key, val) {
-    AppState.logLoot[key] = val;
-    renderApp();
-    // Maintain focus if simple update
-    if(key === 'category') return; // no focus needed
-    if(key === 'currency') document.getElementById('inp-amt').focus();
-}
-
-function toggleAdvanced(isShow) {
-    AppState.logLoot.isAdvanced = isShow;
+window.cycleLogCurrency = () => {
+    const currs = Object.keys(DEFAULT_RATES);
+    const idx = currs.indexOf(AppState.logLoot.currency);
+    AppState.logLoot.currency = currs[(idx + 1) % currs.length];
     renderApp();
 }
-
-function cyclePayer() {
-    const currentIdx = ROSTER.findIndex(r => r.uid === AppState.logLoot.payer);
-    const nextIdx = (currentIdx + 1) % ROSTER.length;
-    AppState.logLoot.payer = ROSTER[nextIdx].uid;
+window.setLogCategory = (id) => { AppState.logLoot.category = id; renderApp(); }
+window.cycleLogPayer = () => {
+    const idx = ROSTER.findIndex(r => r.uid === AppState.logLoot.payer);
+    AppState.logLoot.payer = ROSTER[(idx + 1) % ROSTER.length].uid;
     renderApp();
 }
-
-function cycleShares() {
-    // Check if current shares match a quick group
-    const currentJSON = JSON.stringify(AppState.logLoot.shares.sort());
-    let nextGroupIdx = -1;
-    
-    QUICK_GROUPS.forEach((g, idx) => {
-        if(JSON.stringify(g.shares.sort()) === currentJSON) nextGroupIdx = idx;
-    });
-
-    const nextGroup = QUICK_GROUPS[(nextGroupIdx + 1) % QUICK_GROUPS.length];
-    AppState.logLoot.shares = [...nextGroup.shares];
-    renderApp();
-}
-
-function toggleShare(uid) {
-    const shares = AppState.logLoot.shares;
-    if(shares.includes(uid)) {
-        if(shares.length > 1) AppState.logLoot.shares = shares.filter(u => u !== uid);
+window.cycleLogGroup = () => {
+    const s = AppState.logLoot;
+    s.groupIndex = (s.groupIndex + 1) % QUICK_GROUPS.length;
+    const group = QUICK_GROUPS[s.groupIndex];
+    if (group.name === 'Shared') {
+        s.payer = 'u004'; s.shares = ['u004']; s.paymentMethod = 'cash';
     } else {
-        AppState.logLoot.shares.push(uid);
+        if(s.payer === 'u004') s.payer = 'u001'; 
+        s.shares = [...group.shares];
     }
     renderApp();
 }
-
-function togglePayment() {
+window.cycleLogMethod = () => {
     AppState.logLoot.paymentMethod = (AppState.logLoot.paymentMethod === 'cash') ? 'credit' : 'cash';
     renderApp();
 }
-
-function submitExpense() {
+window.toggleLogDrawer = () => { AppState.logLoot.isDrawerOpen = !AppState.logLoot.isDrawerOpen; renderApp(); }
+window.toggleLogShareUID = (uid) => {
     const s = AppState.logLoot;
-    if(!s.amount || parseFloat(s.amount) <= 0) {
-        alert("請輸入金額！");
-        return;
+    if (s.shares.includes(uid)) {
+        if (s.shares.length > 1) s.shares = s.shares.filter(u => u !== uid);
+    } else {
+        s.shares.push(uid);
     }
-    if(!s.description) {
-        alert("請輸入項目名稱！");
-        return;
-    }
+    renderApp();
+}
+window.submitExpense = () => {
+    const s = AppState.logLoot;
+    if(!s.desc || s.amount <= 0) return;
 
-    // Determine Wallet & Rate
+    let walletId = null;
     let appliedRate = 1;
-    let targetWalletId = null;
 
     if (s.paymentMethod === 'cash') {
-        const wallet = Core.findWallet(s.payer, s.currency);
-        if(!wallet) {
-            alert(`找不到 ${Core.getPerson(s.payer).name} 的 ${s.currency} 錢包！\n請先到錢包頁面建立。`);
-            return;
+        const w = Core.findWallet(s.payer, s.currency);
+        if(!w) {
+            if (s.payer === 'u004') return alert(`請先建立公款 (u004) 的 ${s.currency} 錢包！`);
+             appliedRate = Core.getRate(s.currency);
+        } else {
+            walletId = w.walletId;
+            appliedRate = w.rate;
         }
-        targetWalletId = wallet.walletId;
-        appliedRate = wallet.rate;
     } else {
         appliedRate = Core.getRate(s.currency);
     }
 
-    const expenseData = {
-        description: s.description,
-        amount: parseFloat(s.amount),
-        currency: s.currency,
-        appliedRate: appliedRate,
+    Core.addExpense({
+        description: s.desc, amount: parseFloat(s.amount),
+        currency: s.currency, appliedRate: appliedRate,
         twdEquivalent: parseFloat(s.amount) * appliedRate,
-        payerUID: s.payer,
-        shares: s.shares, // Array of UIDs
-        paymentMethod: s.paymentMethod,
-        walletId: targetWalletId,
+        payerUID: s.payer, shares: s.shares,
+        paymentMethod: s.paymentMethod, walletId: walletId,
         category: s.category,
         dateTime: s.date + ' ' + new Date().toTimeString().slice(0,5),
         notes: s.notes
-    };
+    });
 
-    Core.addExpense(expenseData);
-
-    // Reset Fields but keep context
-    AppState.logLoot.description = "";
-    AppState.logLoot.amount = "";
-    AppState.logLoot.notes = "";
-    // Keep date, payer, shares, etc.
-    
+    s.desc = ""; s.amount = ""; s.notes = "";
+    alert("記帳成功！");
     renderApp();
-    // Focus flow logic is handled in renderLogLoot event binding, 
-    // but here we force re-focus after render
-    setTimeout(() => document.getElementById('inp-desc')?.focus(), 50);
 }
 
 // ------------------------------------------
-// PAGE: WALLET (錢包)
+// PAGE: WALLET
 // ------------------------------------------
 function renderWallet(container) {
-    const wallets = DB.getWallets();
-    
-    // Sort wallets: Balance > 0 first, then by owner
-    wallets.sort((a,b) => (b.balance - a.balance));
+    let wallets = DB.getWallets();
+    // 篩選邏輯
+    if (AppState.wallet.filterUid) {
+        wallets = wallets.filter(w => w.ownerUID === AppState.wallet.filterUid);
+    }
+    wallets.sort((a,b) => b.balance - a.balance);
+
+    const allExpenses = DB.getExpenses();
 
     container.innerHTML = `
-        <div class="flex justify-between items-center mb-6 px-2">
-            <h1 class="text-2xl font-bold text-gray-700">錢包 <span class="text-sm font-normal text-gray-400">Assets</span></h1>
-            <button onclick="showAddWalletModal()" class="flex items-center gap-1 bg-doraBlue text-white px-4 py-2 rounded-full shadow hover:bg-blue-400">
-                <i data-lucide="plus" class="w-4 h-4"></i> 新增
-            </button>
+        <div class="mb-6 px-2">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-700">錢包 <span class="text-sm font-normal text-gray-400">Assets</span></h1>
+                <button onclick="addWalletPrompt()" class="bg-doraBlue text-white px-4 py-2 rounded-full shadow hover:opacity-90 transition">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+                <button onclick="setWalletFilter(null)" 
+                    class="flex-none px-4 py-2 rounded-full text-xs font-bold transition-all ${!AppState.wallet.filterUid ? 'bg-gray-700 text-white' : 'bg-white text-gray-500'}">
+                    ALL
+                </button>
+                ${ROSTER.map(r => `
+                    <button onclick="setWalletFilter('${r.uid}')" 
+                        class="flex-none w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${AppState.wallet.filterUid === r.uid ? 'bg-doraBlue text-white shadow-md scale-110' : 'bg-white text-gray-400'}">
+                        ${r.avatar}
+                    </button>
+                `).join('')}
+            </div>
         </div>
 
-        <div class="grid gap-4">
+        <div class="grid gap-4 pb-20">
             ${wallets.map(w => {
-                const person = Core.getPerson(w.ownerUID);
-                const isExpanded = AppState.walletExpandedId === w.walletId;
+                const p = Core.getPerson(w.ownerUID);
+                const isExp = AppState.wallet.expandedId === w.walletId;
                 
-                // Get History if expanded
-                let historyHtml = '';
-                if(isExpanded) {
-                    const txns = DB.getExpenses()
-                        .filter(e => e.walletId === w.walletId)
+                // 動態撈取最近 20 筆
+                let recentTx = [];
+                if (isExp) {
+                    recentTx = allExpenses
+                        .filter(e => e.walletId === w.walletId && e.paymentMethod === 'cash')
                         .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime))
                         .slice(0, 20);
-                        
-                    historyHtml = `
-                        <div class="mt-4 border-t border-gray-200 pt-3">
-                            <h4 class="text-xs text-gray-400 mb-2">最近 20 筆扣款</h4>
-                            <div class="space-y-2 max-h-60 overflow-y-auto hide-scrollbar">
-                                ${txns.length === 0 ? '<div class="text-xs text-gray-300 text-center">無交易紀錄</div>' : ''}
-                                ${txns.map(t => `
-                                    <div class="flex justify-between text-xs items-center">
-                                        <div class="flex flex-col">
-                                            <span class="text-gray-600 font-bold">${t.description}</span>
-                                            <span class="text-gray-400">${t.dateTime.slice(5, 10)}</span>
-                                        </div>
-                                        <span class="text-red-400 font-mono">-${t.amount.toLocaleString()}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <button onclick="deleteWallet('${w.walletId}')" class="mt-4 w-full py-2 text-xs text-red-400 border border-red-200 rounded-full hover:bg-red-50">刪除此錢包</button>
-                        </div>
-                    `;
                 }
 
                 return `
-                    <div class="glass-card p-5 relative overflow-hidden transition-all duration-300">
-                        <div onclick="toggleWalletExpand('${w.walletId}')" class="cursor-pointer">
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-center gap-3">
-                                    <div class="text-4xl bg-white/50 w-16 h-16 rounded-full flex items-center justify-center shadow-sm">
-                                        ${person.avatar}
-                                    </div>
-                                    <div>
-                                        <div class="text-xs text-gray-400 font-mono uppercase tracking-widest">${w.currency}</div>
-                                        <div class="text-2xl font-bold text-gray-700">${w.balance.toLocaleString()}</div>
-                                        <div class="text-[10px] text-gray-400 mt-1">初始: ${w.originalAmount.toLocaleString()} @ ${w.rate}</div>
-                                    </div>
-                                </div>
-                                <div class="bg-macaronGreen/50 px-3 py-1 rounded-full text-[10px] text-green-800 font-bold">
-                                    CASH
-                                </div>
+                <div class="glass-card p-5 relative overflow-hidden transition-all duration-300 transform ${isExp ? 'border-doraBlue ring-2 ring-doraBlue/20' : ''}">
+                    <div onclick="toggleWalletExp('${w.walletId}')" class="flex justify-between items-start cursor-pointer">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-white/60 rounded-full flex items-center justify-center text-3xl shadow-sm">
+                                ${p.avatar}
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-gray-400 font-mono tracking-widest uppercase mb-1">${w.currency} WALLET</div>
+                                <div class="text-2xl font-bold text-gray-700 font-mono tracking-tight">${w.balance.toLocaleString()}</div>
                             </div>
                         </div>
-                        
-                        ${historyHtml}
+                        <div class="flex flex-col items-end gap-1">
+                            <button onclick="event.stopPropagation(); delWallet('${w.walletId}')" class="text-gray-300 hover:text-red-400 p-1">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                            <span class="text-[10px] text-gray-400">Rate: ${w.rate}</span>
+                        </div>
                     </div>
+
+                    ${isExp ? `
+                    <div class="mt-4 pt-4 border-t border-gray-200/50 animate-bounce-slight origin-top">
+                         <div class="flex justify-between text-xs text-gray-400 mb-3 px-1">
+                            <span>初始: ${w.originalAmount.toLocaleString()}</span>
+                            <span>近 20 筆支出</span>
+                         </div>
+                         <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scroll">
+                            ${recentTx.length === 0 ? '<div class="text-center text-gray-300 text-xs py-2">無扣款紀錄</div>' : 
+                                recentTx.map(tx => {
+                                    const cat = CATEGORIES.find(c=>c.id===tx.category);
+                                    return `
+                                    <div class="bg-white/40 p-2 rounded-xl text-xs flex justify-between items-center">
+                                        <div class="flex flex-col gap-0.5">
+                                            <div class="font-bold text-gray-600 flex items-center gap-1">
+                                                <span>${cat ? cat.icon : ''}</span> ${tx.description}
+                                            </div>
+                                            <div class="text-[10px] text-gray-400">${tx.dateTime.slice(5,16).replace('T',' ')}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-bold text-red-400">-${tx.amount}</div>
+                                            <div class="text-[9px] text-gray-400 flex items-center justify-end gap-1">
+                                                ${tx.shares.map(uid => Core.getPerson(uid).avatar).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')
+                            }
+                         </div>
+                    </div>
+                    ` : ''}
+                </div>
                 `;
             }).join('')}
-            
-            ${wallets.length === 0 ? '<div class="text-center text-gray-400 mt-10">還沒有錢包，點擊右上角新增！</div>' : ''}
+            ${wallets.length===0 ? '<div class="text-center text-gray-400 py-10">尚無錢包</div>' : ''}
         </div>
     `;
 }
 
-function toggleWalletExpand(wid) {
-    AppState.walletExpandedId = (AppState.walletExpandedId === wid) ? null : wid;
-    renderApp();
+window.setWalletFilter = (uid) => { AppState.wallet.filterUid = uid; renderApp(); }
+window.toggleWalletExp = (wid) => { AppState.wallet.expandedId = (AppState.wallet.expandedId===wid) ? null : wid; renderApp(); }
+window.addWalletPrompt = () => {
+    const owner = prompt("UID (u001, u002...):", "u004");
+    if(!ROSTER.find(r=>r.uid===owner)) return alert("UID 無效");
+    const curr = prompt("幣別 (JPY, USD...):", "JPY");
+    const amt = parseFloat(prompt("初始金額:", "50000"));
+    const rate = parseFloat(prompt("換匯匯率:", "0.22"));
+    
+    if(curr && !isNaN(amt) && !isNaN(rate)) {
+        const ws = DB.getWallets();
+        ws.push({
+            walletId: 'w'+Date.now(),
+            ownerUID: owner, currency: curr.toUpperCase(),
+            originalAmount: amt, balance: amt, rate: rate,
+            createdAt: new Date().toISOString()
+        });
+        DB.setWallets(ws);
+        renderApp();
+    }
 }
-
-function showAddWalletModal() {
-    const owner = prompt("擁有者 UID (u001=Smile, u002=Jiani, u003=Nomad, u004=Shared):", "u001");
-    if(!ROSTER.find(r => r.uid === owner)) { alert("UID 不存在"); return; }
+window.delWallet = (wid) => {
+    // 檢查是否有關聯
+    const hasExp = DB.getExpenses().some(e => e.walletId === wid);
+    const msg = hasExp ? "此錢包已有歷史扣款紀錄，刪除將導致歷史紀錄無法追溯來源。確定刪除？" : "確定刪除此錢包？";
     
-    const curr = prompt("幣別 (JPY, USD, EUR...):", "JPY");
-    if(!curr) return;
-    
-    const amt = parseFloat(prompt("原始金額:", "50000"));
-    if(isNaN(amt)) return;
-    
-    const rate = parseFloat(prompt("換匯匯率 (TWD):", "0.22"));
-    if(isNaN(rate)) return;
-
-    const wallets = DB.getWallets();
-    wallets.push({
-        walletId: 'w' + Date.now(),
-        ownerUID: owner,
-        currency: curr.toUpperCase(),
-        originalAmount: amt,
-        balance: amt,
-        rate: rate,
-        createdAt: new Date().toISOString()
-    });
-    DB.setWallets(wallets);
-    renderApp();
-}
-
-function deleteWallet(wid) {
-    if(confirm("確定刪除此錢包？\n歷史帳目不會消失，但無法再追蹤餘額。")) {
-        const wallets = DB.getWallets().filter(w => w.walletId !== wid);
-        DB.setWallets(wallets);
+    if(confirm(msg)) {
+        DB.setWallets(DB.getWallets().filter(w=>w.walletId!==wid));
         renderApp();
     }
 }
 
 // ------------------------------------------
-// PAGE: MY (我的)
-// ------------------------------------------
-function renderMy(container) {
-    const uid = AppState.myUid;
-    const expenses = DB.getExpenses();
-    const person = Core.getPerson(uid);
-
-    // Calc Stats
-    let totalOutflow = 0; // 墊付
-    let actualConsumption = 0; // 實際負擔
-    let categoryStats = {};
-
-    expenses.forEach(e => {
-        // Outflow
-        if(e.payerUID === uid) totalOutflow += e.twdEquivalent;
-
-        // Consumption
-        if(e.shares.includes(uid)) {
-            // My Share = Total / People Count
-            const shareCount = e.shares.length;
-            const myShareAmt = e.twdEquivalent / shareCount;
-            actualConsumption += myShareAmt;
-
-            // Category breakdown
-            if(!categoryStats[e.category]) categoryStats[e.category] = 0;
-            categoryStats[e.category] += myShareAmt;
-        }
-    });
-
-    // Sort categories by amount
-    const sortedCats = Object.entries(categoryStats).sort((a,b) => b[1] - a[1]);
-
-    container.innerHTML = `
-        <div class="flex items-center gap-4 mb-6 px-2">
-            <h1 class="text-2xl font-bold text-gray-700">我的 <span class="text-sm font-normal text-gray-400">Analysis</span></h1>
-            <select onchange="AppState.myUid=this.value; renderApp()" class="bg-white p-1 rounded-lg text-sm border shadow-sm">
-                ${ROSTER.map(r => `<option value="${r.uid}" ${r.uid===uid?'selected':''}>${r.avatar} ${r.name}</option>`).join('')}
-            </select>
-        </div>
-
-        <div class="glass-card p-6 mb-6 bg-gradient-to-br from-white/80 to-doraBlue/20">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="text-3xl">${person.avatar}</span>
-                    <span class="text-xl font-bold text-gray-700">${person.name}</span>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white/50 p-3 rounded-[1.5rem] text-center">
-                    <div class="text-[10px] text-gray-400 uppercase">Actual Consumption</div>
-                    <div class="text-xl font-bold text-doraBlue">$${Math.round(actualConsumption).toLocaleString()}</div>
-                    <div class="text-[10px] text-gray-400">實際花費</div>
-                </div>
-                <div class="bg-white/50 p-3 rounded-[1.5rem] text-center">
-                    <div class="text-[10px] text-gray-400 uppercase">Total Outflow</div>
-                    <div class="text-xl font-bold text-macaronPink">$${Math.round(totalOutflow).toLocaleString()}</div>
-                    <div class="text-[10px] text-gray-400">總墊付</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-4 px-2">
-            <h3 class="text-sm text-gray-400 font-bold ml-1">分類佔比 (實際負擔)</h3>
-            ${sortedCats.map(([catId, amt]) => {
-                const cat = CATEGORIES.find(c => c.id === catId) || {name: catId, color: 'bg-gray-300', icon: '❓'};
-                const pct = Math.round((amt / actualConsumption) * 100);
-                const isExpanded = AppState.history.category === catId && AppState.currentPage === 'my'; // Reusing simple logic
-                
-                return `
-                <div onclick="toggleMyCatExpand('${catId}')" class="cursor-pointer">
-                    <div class="flex justify-between items-end mb-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg">${cat.icon}</span>
-                            <span class="text-sm text-gray-600 font-bold">${cat.name}</span>
-                        </div>
-                        <div class="text-xs font-mono text-gray-500">$${Math.round(amt).toLocaleString()} <span class="text-[10px] text-gray-300">(${pct}%)</span></div>
-                    </div>
-                    <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full ${cat.color} rounded-full" style="width: ${pct}%"></div>
-                    </div>
-                    
-                    <div id="my-cat-detail-${catId}" class="${AppState.myCatExpand === catId ? 'block' : 'hidden'} mt-3 space-y-2 pl-2 border-l-2 border-gray-200">
-                        ${getRecentMyCatExpenses(uid, catId).map(e => `
-                            <div class="flex justify-between text-[10px] items-center text-gray-500">
-                                <span>${e.date} ${e.desc}</span>
-                                <span class="font-bold">NT$${Math.round(e.myShare)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-}
-
-function toggleMyCatExpand(catId) {
-    AppState.myCatExpand = (AppState.myCatExpand === catId) ? null : catId;
-    renderApp();
-}
-
-function getRecentMyCatExpenses(uid, catId) {
-    const expenses = DB.getExpenses();
-    return expenses
-        .filter(e => e.shares.includes(uid) && e.category === catId)
-        .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime))
-        .slice(0, 20)
-        .map(e => ({
-            date: e.dateTime.slice(5,10),
-            desc: e.description,
-            myShare: e.twdEquivalent / e.shares.length
-        }));
-}
-
-
-// ------------------------------------------
-// PAGE: HISTORY (歷史)
-// ------------------------------------------
-function renderHistory(container) {
-    const s = AppState.history;
-    let expenses = DB.getExpenses();
-
-    // Filters
-    if(s.dateRange.start && s.dateRange.end) {
-        expenses = expenses.filter(e => {
-            const d = e.dateTime.slice(0, 10);
-            return d >= s.dateRange.start && d <= s.dateRange.end;
-        });
-    }
-    if(s.category) expenses = expenses.filter(e => e.category === s.category);
-    if(s.payer) expenses = expenses.filter(e => e.payerUID === s.payer);
-    if(s.paymentMethod) expenses = expenses.filter(e => e.paymentMethod === s.paymentMethod);
-    if(s.currency) expenses = expenses.filter(e => e.currency === s.currency);
-
-    // Stats Bar
-    const totalTwd = expenses.reduce((sum, e) => sum + e.twdEquivalent, 0);
-    
-    // UI
-    container.innerHTML = `
-        <div class="mb-4 sticky top-0 bg-bgBase/95 backdrop-blur z-20 pb-2">
-            <h1 class="text-2xl font-bold text-gray-700 px-2 mb-2">歷史 <span class="text-sm font-normal text-gray-400">History</span></h1>
-            
-            <div class="mb-2 px-1">
-                <button onclick="changeDateFilter()" class="w-full glass-card py-2 px-4 flex items-center justify-center gap-2 text-sm text-gray-600 font-bold">
-                    <i data-lucide="calendar" class="w-4 h-4"></i>
-                    ${s.dateRange.start ? `${s.dateRange.start} ~ ${s.dateRange.end}` : '所有日期範圍'}
-                </button>
-            </div>
-
-            <div class="flex gap-2 overflow-x-auto hide-scrollbar px-1 pb-1">
-                <button onclick="resetHistoryFilter()" class="flex-none p-2 rounded-full bg-gray-200 text-gray-600">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                </button>
-                
-                <button onclick="changeCatFilter()" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${s.category ? 'bg-macaronPink text-white border-transparent' : 'bg-white text-gray-500 border-gray-200'}">
-                   ${s.category ? CATEGORIES.find(c=>c.id===s.category).name : '分類'}
-                </button>
-
-                <button onclick="changePayerFilter()" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${s.payer ? 'bg-doraBlue text-white border-transparent' : 'bg-white text-gray-500 border-gray-200'}">
-                   ${s.payer ? Core.getPerson(s.payer).name : '支付者'}
-                </button>
-
-                <button onclick="cycleMethodFilter()" class="flex-none px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${s.paymentMethod ? 'bg-green-400 text-white border-transparent' : 'bg-white text-gray-500 border-gray-200'}">
-                   ${s.paymentMethod === 'cash' ? '現金' : (s.paymentMethod === 'credit' ? '信用卡' : '方式')}
-                </button>
-            </div>
-            
-            <div class="mt-2 flex justify-between items-center px-4 py-2 bg-gray-100 rounded-full mx-1">
-                <span class="text-xs text-gray-500">筆數: ${expenses.length}</span>
-                <span class="text-sm font-bold text-gray-700">總計: NT$${Math.round(totalTwd).toLocaleString()}</span>
-            </div>
-        </div>
-
-        <div class="space-y-3 pb-20">
-            ${expenses.map(e => {
-                const cat = CATEGORIES.find(c => c.id === e.category);
-                const isExpanded = s.expandedId === e.expenseId;
-                const payer = Core.getPerson(e.payerUID);
-                
-                let detailHtml = '';
-                if(isExpanded) {
-                    const perPerson = Math.round(e.twdEquivalent / e.shares.length);
-                    detailHtml = `
-                        <div class="mt-3 pt-3 border-t border-gray-200 space-y-2 text-xs text-gray-600 animation-slide-down">
-                            <div class="flex justify-between">
-                                <span>原幣金額:</span>
-                                <span class="font-mono">${e.currency} ${e.amount.toLocaleString()}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>匯率:</span>
-                                <span class="font-mono">${e.appliedRate}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>分攤人數:</span>
-                                <span>${e.shares.length} 人 (${e.shares.map(u => Core.getPerson(u).avatar).join('')})</span>
-                            </div>
-                            <div class="flex justify-between text-doraBlue font-bold">
-                                <span>每人負擔:</span>
-                                <span>NT$${perPerson.toLocaleString()}</span>
-                            </div>
-                            ${e.notes ? `<div class="bg-yellow-50 p-2 rounded mt-2">📝 ${e.notes}</div>` : ''}
-                            
-                            <button onclick="Core.deleteExpense('${e.expenseId}');renderApp()" class="w-full mt-2 py-2 text-red-400 border border-red-200 rounded-lg hover:bg-red-50">刪除此紀錄</button>
-                        </div>
-                    `;
-                }
-
-                return `
-                <div onclick="toggleHistoryExpand('${e.expenseId}')" class="glass-card p-4 border-l-4 ${cat.color.replace('bg-', 'border-')} cursor-pointer">
-                    <div class="flex justify-between items-start">
-                        <div class="flex gap-3">
-                            <div class="mt-1 text-2xl">${cat.icon}</div>
-                            <div>
-                                <div class="text-[10px] text-gray-400">${e.dateTime.slice(0, 16)}</div>
-                                <div class="font-bold text-gray-700">${e.description}</div>
-                                <div class="flex items-center gap-1 mt-1">
-                                    <span class="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">${payer.name} 付</span>
-                                    <span class="text-[10px] text-gray-400">${e.paymentMethod==='cash'?'現金':'卡'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-bold text-gray-800">NT$${Math.round(e.twdEquivalent).toLocaleString()}</div>
-                            <div class="text-[10px] text-gray-400">${e.currency}</div>
-                        </div>
-                    </div>
-                    ${detailHtml}
-                </div>
-                `;
-            }).join('')}
-            ${expenses.length === 0 ? '<div class="text-center text-gray-400 mt-10">無符合條件紀錄</div>' : ''}
-        </div>
-    `;
-}
-
-function toggleHistoryExpand(eid) {
-    AppState.history.expandedId = (AppState.history.expandedId === eid) ? null : eid;
-    renderApp();
-}
-
-function resetHistoryFilter() {
-    AppState.history = {
-        dateRange: { start: null, end: null },
-        category: null,
-        payer: null,
-        paymentMethod: null,
-        currency: null,
-        expandedId: null
-    };
-    renderApp();
-}
-
-function changeDateFilter() {
-    // Simple prompt for demo, ideally a modal
-    const start = prompt("開始日期 (YYYY-MM-DD):", new Date().toISOString().slice(0,10));
-    if(!start) return;
-    const end = prompt("結束日期 (YYYY-MM-DD):", start);
-    AppState.history.dateRange = { start, end };
-    renderApp();
-}
-
-function changeCatFilter() {
-    // Cycle simple logic or prompt
-    const catName = prompt("輸入分類名稱 (餐飲/交通...):");
-    const cat = CATEGORIES.find(c => c.name === catName);
-    if(cat) AppState.history.category = cat.id;
-    else AppState.history.category = null;
-    renderApp();
-}
-
-function changePayerFilter() {
-    const name = prompt("輸入付款人名字 (Smile/Jiani...):");
-    const person = ROSTER.find(r => r.name === name);
-    if(person) AppState.history.payer = person.uid;
-    else AppState.history.payer = null;
-    renderApp();
-}
-
-function cycleMethodFilter() {
-    const m = AppState.history.paymentMethod;
-    if(m === null) AppState.history.paymentMethod = 'cash';
-    else if(m === 'cash') AppState.history.paymentMethod = 'credit';
-    else AppState.history.paymentMethod = null;
-    renderApp();
-}
-
-
-// ------------------------------------------
-// PAGE: SETTINGS (設定)
+// PAGE: SETTINGS
 // ------------------------------------------
 function renderSettings(container) {
     const rates = DB.getRates();
-    
     container.innerHTML = `
-        <div class="px-2 mb-6">
-            <h1 class="text-2xl font-bold text-gray-700 mb-2">設定 <span class="text-sm font-normal text-gray-400">Settings</span></h1>
-            
-            <div class="bg-macaronPurple/20 p-4 rounded-[2rem] mb-6">
-                <div class="flex items-start gap-3 mb-4">
-                    <i data-lucide="info" class="text-doraBlue w-6 h-6 flex-none"></i>
-                    <p class="text-xs text-gray-600 leading-relaxed">
-                        <strong>匯率鎖定說明：</strong><br>
-                        這裡設定的是「旅行參考匯率」與「信用卡記帳匯率」。
-                        修改後只會影響未來的記帳，舊帳目與現金錢包不受影響。
-                    </p>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3">
-                    ${Object.entries(rates).map(([curr, rate]) => `
-                        <div class="glass-card p-3 text-center relative group">
-                            <div class="font-bold text-gray-700">${curr}</div>
-                            <div class="text-[10px] text-gray-400 mb-1">1 ${curr} =</div>
-                            <input type="number" step="0.01" value="${rate}" 
-                                onchange="saveRate('${curr}', this.value)"
-                                class="w-full text-center font-mono font-bold text-doraBlue bg-transparent border-b border-gray-300 focus:border-doraBlue">
-                            <div class="text-[10px] text-gray-400 mt-1">TWD</div>
-                        </div>
-                    `).join('')}
-                    <button onclick="addCurrency()" class="glass-card p-3 flex flex-col items-center justify-center text-gray-400 border-dashed border-2 border-gray-300">
-                        <i data-lucide="plus" class="w-6 h-6"></i>
-                        <span class="text-xs">新增幣別</span>
+        <h1 class="text-2xl font-bold text-gray-700 px-2 mb-6">設定 <span class="text-sm font-normal text-gray-400">Settings</span></h1>
+        
+        <div class="glass-card p-5 mb-6">
+            <h3 class="text-sm font-bold text-gray-500 mb-4 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4"></i> 參考匯率 (1 外幣 = ? TWD)</h3>
+            <div class="grid grid-cols-2 gap-3">
+                ${Object.entries(rates).map(([curr, val]) => `
+                    <div class="bg-white/50 p-2 rounded-xl flex flex-col items-center">
+                        <span class="text-xs font-bold text-gray-400">${curr}</span>
+                        <input type="number" step="0.001" value="${val}" 
+                            onchange="updateRate('${curr}', this.value)"
+                            class="text-center font-mono font-bold text-doraBlue bg-transparent w-full text-lg border-b border-gray-300 focus:border-doraBlue">
+                    </div>
+                `).join('')}
+            </div>
+            <p class="text-[10px] text-gray-400 mt-3 text-center">* 僅影響信用卡與無錢包現金記帳</p>
+        </div>
+
+        <div class="space-y-3 px-1">
+            <div class="flex gap-3">
+                <div class="flex-1 relative">
+                    <button class="w-full py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                        <i data-lucide="upload" class="w-5 h-5 text-macaronPink"></i> 
+                        <span class="text-xs">匯入 Expenses</span>
                     </button>
+                    <input type="file" onchange="importExpensesCSV(this)" class="absolute inset-0 opacity-0 cursor-pointer">
                 </div>
+                <button onclick="exportExpensesCSV()" class="flex-1 py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                    <i data-lucide="download" class="w-5 h-5 text-doraBlue"></i> 
+                    <span class="text-xs">匯出 Expenses</span>
+                </button>
             </div>
 
-            <h2 class="text-lg font-bold text-gray-700 mb-3 px-2">資料管理</h2>
-            <div class="space-y-3">
-                <div class="flex gap-3">
-                    <button onclick="exportCSV('expenses')" class="flex-1 py-3 bg-doraBlue text-white rounded-full shadow text-sm font-bold">匯出 Expenses CSV</button>
-                    <button onclick="triggerImport('expenses')" class="flex-1 py-3 bg-white text-doraBlue border border-doraBlue rounded-full shadow text-sm font-bold">匯入 Expenses</button>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="exportCSV('wallet')" class="flex-1 py-3 bg-macaronYellow text-gray-700 rounded-full shadow text-sm font-bold">匯出 Wallet CSV</button>
-                    <button onclick="triggerImport('wallet')" class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full shadow text-sm font-bold">匯入 Wallet</button>
-                </div>
-                
-                <div class="pt-6 border-t border-gray-200 mt-6">
-                    <button onclick="resetAllData()" class="w-full py-3 bg-red-100 text-red-500 rounded-full text-sm font-bold hover:bg-red-200">
-                        ⚠️ 重置所有資料 (Reset All)
+            <div class="flex gap-3">
+                <div class="flex-1 relative">
+                    <button class="w-full py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                        <i data-lucide="wallet" class="w-5 h-5 text-macaronPurple"></i> 
+                        <span class="text-xs">匯入 Wallet</span>
                     </button>
+                    <input type="file" onchange="importWalletCSV(this)" class="absolute inset-0 opacity-0 cursor-pointer">
                 </div>
+                <button onclick="exportWalletCSV()" class="flex-1 py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                    <i data-lucide="download" class="w-5 h-5 text-macaronGreen"></i> 
+                    <span class="text-xs">匯出 Wallet</span>
+                </button>
             </div>
+
+            <button onclick="resetAllData()" class="w-full py-4 mt-6 bg-red-50 rounded-[2.5rem] border border-red-100 text-red-400 font-bold text-xs flex justify-center items-center gap-2 active:bg-red-100">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> RESET ALL DATA
+            </button>
         </div>
-        
-        <input type="file" id="file-import" class="hidden" accept=".csv">
     `;
 }
 
-function saveRate(curr, val) {
-    const rates = DB.getRates();
-    rates[curr] = parseFloat(val);
-    DB.setRates(rates);
+window.updateRate = (c, v) => { const r = DB.getRates(); r[c] = parseFloat(v); DB.setRates(r); }
+
+// CSV Handlers
+window.exportExpensesCSV = () => {
+    const exps = DB.getExpenses();
+    let csv = "\uFEFFexpenseId,date,category,description,amount,currency,appliedRate,twdEquivalent,payerUID,shares,paymentMethod,walletId,notes\n";
+    exps.forEach(e => {
+        csv += `${e.expenseId},${e.dateTime},${e.category},"${e.description}",${e.amount},${e.currency},${e.appliedRate},${e.twdEquivalent},${e.payerUID},"${e.shares.join('|')}",${e.paymentMethod},${e.walletId||''},"${e.notes}"\n`;
+    });
+    downloadCSV(csv, 'expenses');
 }
 
-function addCurrency() {
-    const curr = prompt("幣別代碼 (例如 GBP):");
-    if(!curr) return;
-    const rate = parseFloat(prompt(`1 ${curr.toUpperCase()} = ? TWD`));
-    if(isNaN(rate)) return;
-    saveRate(curr.toUpperCase(), rate);
-    renderApp();
+window.exportWalletCSV = () => {
+    const ws = DB.getWallets();
+    let csv = "\uFEFFwalletId,ownerUID,currency,originalAmount,balance,rate,createdAt\n";
+    ws.forEach(w => {
+        csv += `${w.walletId},${w.ownerUID},${w.currency},${w.originalAmount},${w.balance},${w.rate},${w.createdAt}\n`;
+    });
+    downloadCSV(csv, 'wallets');
 }
 
-function resetAllData() {
-    if(confirm("警告：這將刪除所有記帳與錢包資料！確定嗎？")) {
-        localStorage.clear();
+function downloadCSV(content, prefix) {
+    const blob = new Blob([content], {type: 'text/csv;charset=utf-8;'});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `doraemon_${prefix}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+
+window.importExpensesCSV = (input) => {
+    parseCSV(input.files[0], (lines) => {
+        const exps = [];
+        for(let i=1; i<lines.length; i++) {
+            if(!lines[i].trim()) continue;
+            const col = parseCSVLine(lines[i]);
+            if(col.length < 5) continue;
+            exps.push({
+                expenseId: col[0], dateTime: col[1], category: col[2], description: col[3],
+                amount: parseFloat(col[4]), currency: col[5], appliedRate: parseFloat(col[6]),
+                twdEquivalent: parseFloat(col[7]), payerUID: col[8], shares: col[9].split('|'),
+                paymentMethod: col[10], walletId: col[11]===''?null:col[11], notes: col[12]||''
+            });
+        }
+        DB.setExpenses(exps);
+        alert(`匯入 ${exps.length} 筆支出資料`);
+        renderApp();
+    });
+}
+
+window.importWalletCSV = (input) => {
+    parseCSV(input.files[0], (lines) => {
+        const existing = DB.getWallets();
+        let count = 0;
+        for(let i=1; i<lines.length; i++) {
+            if(!lines[i].trim()) continue;
+            const col = parseCSVLine(lines[i]);
+            if(col.length < 6) continue;
+            
+            const newW = {
+                walletId: col[0], ownerUID: col[1], currency: col[2],
+                originalAmount: parseFloat(col[3]), balance: parseFloat(col[4]),
+                rate: parseFloat(col[5]), createdAt: col[6]
+            };
+
+            // Overwrite logic
+            const idx = existing.findIndex(w => w.walletId === newW.walletId);
+            if(idx >= 0) existing[idx] = newW;
+            else existing.push(newW);
+            count++;
+        }
+        DB.setWallets(existing);
+        alert(`匯入/更新 ${count} 個錢包`);
+        renderApp();
+    });
+}
+
+function parseCSV(file, callback) {
+    const r = new FileReader();
+    r.onload = (e) => callback(e.target.result.split('\n'));
+    r.readAsText(file);
+}
+
+function parseCSVLine(text) {
+    // 簡易 CSV Parser，處理引號
+    const re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
+    const re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+    const a = [];
+    text.replace(re_value, (m0, m1, m2, m3) => {
+        if (m1 !== undefined) a.push(m1.replace(/\\'/g, "'"));
+        else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"'));
+        else if (m3 !== undefined) a.push(m3);
+        return ''; 
+    });
+    if (/,\s*$/.test(text)) a.push('');
+    return a;
+}
+
+window.resetAllData = () => {
+    if(confirm("警告：這將刪除所有記帳與錢包資料，僅保留設定匯率。確定重置？")) {
+        DB.setExpenses([]);
+        DB.setWallets([]);
         location.reload();
     }
 }
 
 // ------------------------------------------
-// EXPORT / IMPORT LOGIC
+// PAGE: HISTORY (Keep existing) & MY (Keep existing)
 // ------------------------------------------
-function exportCSV(type) {
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
-    const dateStr = new Date().toISOString().slice(0,10);
-    
-    if(type === 'expenses') {
-        const data = DB.getExpenses();
-        // Header
-        csvContent += "expenseId,date,category,description,amount,currency,appliedRate,twdEquivalent,payerUID,shares,paymentMethod,walletId,notes\n";
-        // Rows
-        data.forEach(e => {
-            const row = [
-                e.expenseId,
-                e.dateTime.slice(0,10),
-                e.category,
-                `"${e.description}"`,
-                e.amount,
-                e.currency,
-                e.appliedRate,
-                e.twdEquivalent,
-                e.payerUID,
-                `"${e.shares.join('|')}"`,
-                e.paymentMethod,
-                e.walletId || '',
-                `"${e.notes}"`
-            ];
-            csvContent += row.join(",") + "\n";
-        });
-    } else {
-        const data = DB.getWallets();
-        csvContent += "walletId,ownerUID,currency,originalAmount,balance,rate,createdAt\n";
-        data.forEach(w => {
-            const row = [
-                w.walletId, w.ownerUID, w.currency, w.originalAmount, w.balance, w.rate, w.createdAt
-            ];
-            csvContent += row.join(",") + "\n";
-        });
-    }
+// (此處省略 HISTORY 與 MY 的重複代碼，因為你提到沒說的維持原樣，
+// 但為了檔案完整可執行，我需要把這兩個函數補回來，保持原邏輯)
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `doraemon_${type}_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-}
+function renderHistory(container) {
+    const s = AppState.history;
+    const f = s.filterIndex;
+    let exps = DB.getExpenses();
 
-function triggerImport(type) {
-    const input = document.getElementById('file-import');
-    input.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            const text = evt.target.result;
-            processCSV(type, text);
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-}
+    const catOpts = ['All', ...CATEGORIES.map(c=>c.id)];
+    const payerOpts = ['All', ...ROSTER.map(r=>r.uid)];
+    const methodOpts = ['All', 'cash', 'credit'];
+    const currOpts = ['All', ...Object.keys(DEFAULT_RATES)];
 
-function processCSV(type, text) {
-    const lines = text.split('\n');
-    const headers = lines[0].split(',');
-    let successCount = 0;
+    if(s.dateRange.start) exps = exps.filter(e => e.dateTime.slice(0,10) >= s.dateRange.start && e.dateTime.slice(0,10) <= s.dateRange.end);
+    if(f.cat > 0) exps = exps.filter(e => e.category === catOpts[f.cat]);
+    if(f.payer > 0) exps = exps.filter(e => e.payerUID === payerOpts[f.payer]);
+    if(f.method > 0) exps = exps.filter(e => e.paymentMethod === methodOpts[f.method]);
+    if(f.curr > 0) exps = exps.filter(e => e.currency === currOpts[f.curr]);
 
-    if(type === 'expenses') {
-        const currentExps = DB.getExpenses();
-        for(let i=1; i<lines.length; i++) {
-            if(!lines[i].trim()) continue;
-            // Simple CSV parse (fails on commas inside quotes without regex, but sufficient for basic backups)
-            // Using a simple regex split for robustness
-            const row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(s => s.replace(/"/g, ''));
+    const totalTwd = exps.reduce((sum, e) => sum + e.twdEquivalent, 0);
+
+    // Helpers
+    const getCatLabel = () => f.cat===0 ? '分類' : CATEGORIES.find(c=>c.id===catOpts[f.cat]).icon;
+    const getPayerLabel = () => f.payer===0 ? '支付' : Core.getPerson(payerOpts[f.payer]).avatar;
+    const getMethodLabel = () => f.method===0 ? '方式' : (methodOpts[f.method]==='cash'?'現金':'卡');
+    const getCurrLabel = () => f.curr===0 ? '幣別' : currOpts[f.curr];
+
+    container.innerHTML = `
+        <div class="sticky top-0 bg-bgBase/95 backdrop-blur z-30 pb-2 transition-all">
+            <h1 class="text-2xl font-bold text-gray-700 px-2 mb-3">歷史 <span class="text-sm font-normal text-gray-400">History</span></h1>
             
-            if(row.length < 5) continue; 
-            
-            // Map row to object (Index based on Export order)
-            // expenseId,date,category,description,amount,currency,appliedRate,twdEquivalent,payerUID,shares,paymentMethod,walletId,notes
-            const newExp = {
-                expenseId: row[0],
-                dateTime: row[1] + " 12:00", // Approx
-                category: row[2],
-                description: row[3],
-                amount: parseFloat(row[4]),
-                currency: row[5],
-                appliedRate: parseFloat(row[6]),
-                twdEquivalent: parseFloat(row[7]),
-                payerUID: row[8],
-                shares: row[9].split('|'),
-                paymentMethod: row[10],
-                walletId: row[11] === 'null' ? null : row[11],
-                notes: row[12] || ""
-            };
+            <div class="mb-2 relative">
+                <button class="w-full glass-card py-3 px-4 flex items-center justify-center gap-2 text-sm text-gray-600 font-bold active:scale-95 transition-transform">
+                    <i data-lucide="calendar" class="w-4 h-4 text-doraBlue"></i>
+                    ${s.dateRange.start ? `${s.dateRange.start} ~ ${s.dateRange.end}` : '所有日期範圍'}
+                </button>
+                <input type="date" class="absolute inset-0 opacity-0 w-1/2" onchange="AppState.history.dateRange.start=this.value; if(!AppState.history.dateRange.end) AppState.history.dateRange.end=this.value; renderApp()">
+                <input type="date" class="absolute inset-0 left-1/2 opacity-0 w-1/2" onchange="AppState.history.dateRange.end=this.value; renderApp()">
+            </div>
 
-            // Dedupe
-            if(!currentExps.find(e => e.expenseId === newExp.expenseId)) {
-                currentExps.push(newExp);
-                successCount++;
-            }
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar px-1 pb-2">
+                <button onclick="resetHistory()" class="flex-none p-2.5 rounded-full bg-gray-200 text-gray-600 active:scale-90 transition-transform"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+                <button onclick="cycleHistFilter('cat', ${catOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.cat>0?'bg-macaronPink text-white':'bg-white text-gray-500'}">${getCatLabel()}</button>
+                <button onclick="cycleHistFilter('payer', ${payerOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.payer>0?'bg-doraBlue text-white':'bg-white text-gray-500'}">${getPayerLabel()}</button>
+                <button onclick="cycleHistFilter('method', ${methodOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.method>0?'bg-green-400 text-white':'bg-white text-gray-500'}">${getMethodLabel()}</button>
+                <button onclick="cycleHistFilter('curr', ${currOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.curr>0?'bg-macaronYellow text-gray-700':'bg-white text-gray-500'}">${getCurrLabel()}</button>
+            </div>
+            
+            <div class="mt-1 flex justify-between items-center px-4 py-1.5 bg-white/50 rounded-full mx-1 border border-white">
+                <span class="text-[10px] text-gray-400 font-bold tracking-wider">FOUND: ${exps.length}</span>
+                <span class="text-sm font-bold text-gray-700">NT$${Math.round(totalTwd).toLocaleString()}</span>
+            </div>
+        </div>
+
+        <div class="space-y-3 pb-24">
+            ${exps.map(e => {
+                const cat = CATEGORIES.find(c=>c.id===e.category)||{icon:'?',color:'bg-gray-200'};
+                const isExp = s.expandedId === e.expenseId;
+                const payer = Core.getPerson(e.payerUID);
+                return `
+                <div onclick="toggleHistExp('${e.expenseId}')" class="glass-card p-4 border-l-[6px] ${cat.color.replace('bg-', 'border-')} active:scale-[0.99] transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-3 items-center">
+                            <div class="text-2xl">${cat.icon}</div>
+                            <div>
+                                <div class="text-[10px] text-gray-400 font-mono">${e.dateTime.slice(5,10)}</div>
+                                <div class="font-bold text-gray-700 text-sm line-clamp-1">${e.description}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-gray-800 text-base">NT$${Math.round(e.twdEquivalent).toLocaleString()}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${e.currency} ${e.amount}</div>
+                        </div>
+                    </div>
+                    ${isExp ? `
+                    <div class="mt-3 pt-3 border-t border-gray-200 space-y-2 text-xs text-gray-500">
+                        <div class="flex justify-between"><span>匯率:</span><span>${e.appliedRate}</span></div>
+                        <div class="flex justify-between"><span>付款:</span><span>${payer.name} (${e.paymentMethod})</span></div>
+                        <div class="flex justify-between"><span>分攤:</span><span>${e.shares.map(u=>Core.getPerson(u).avatar).join('')}</span></div>
+                        ${e.notes ? `<div class="bg-yellow-50 p-2 rounded text-gray-600 mt-2">${e.notes}</div>` : ''}
+                        <button onclick="event.stopPropagation(); deleteExp('${e.expenseId}')" class="w-full mt-2 py-2 text-red-400 border border-red-200 rounded-full">刪除</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('')}
+            ${exps.length===0 ? '<div class="text-center text-gray-300 mt-10">...</div>' : ''}
+        </div>
+    `;
+}
+window.resetHistory = () => { AppState.history.dateRange={start:null,end:null}; AppState.history.filterIndex={cat:0,payer:0,method:0,curr:0}; renderApp(); }
+window.cycleHistFilter = (key,len) => { AppState.history.filterIndex[key]=(AppState.history.filterIndex[key]+1)%len; renderApp(); }
+window.toggleHistExp = (eid) => { AppState.history.expandedId=(AppState.history.expandedId===eid)?null:eid; renderApp(); }
+window.deleteExp = (eid) => { if(confirm('刪除將無法復原，現金餘額將回補。')) { Core.deleteExpense(eid); renderApp(); } }
+
+function renderMy(container) {
+    const uid = AppState.myUid;
+    const exps = DB.getExpenses();
+    const p = Core.getPerson(uid);
+    let outflow = 0, consumption = 0, catMap = {};
+
+    exps.forEach(e => {
+        if(e.payerUID === uid) outflow += e.twdEquivalent;
+        if(e.shares.includes(uid)) {
+            const myPart = e.twdEquivalent / e.shares.length;
+            consumption += myPart;
+            if(!catMap[e.category]) catMap[e.category] = 0;
+            catMap[e.category] += myPart;
         }
-        DB.setExpenses(currentExps);
-    } else {
-        const currentWallets = DB.getWallets();
-        for(let i=1; i<lines.length; i++) {
-            if(!lines[i].trim()) continue;
-            const row = lines[i].split(',');
-            // walletId,ownerUID,currency,originalAmount,balance,rate,createdAt
-            const newW = {
-                walletId: row[0],
-                ownerUID: row[1],
-                currency: row[2],
-                originalAmount: parseFloat(row[3]),
-                balance: parseFloat(row[4]),
-                rate: parseFloat(row[5]),
-                createdAt: row[6]
-            };
-             // Upsert
-            const idx = currentWallets.findIndex(w => w.walletId === newW.walletId);
-            if(idx >= 0) currentWallets[idx] = newW;
-            else currentWallets.push(newW);
-            successCount++;
-        }
-        DB.setWallets(currentWallets);
-    }
-    alert(`成功匯入 ${successCount} 筆資料！`);
-    renderApp();
+    });
+    const sortedCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+
+    container.innerHTML = `
+        <div class="flex items-center justify-between mb-6 px-2">
+            <h1 class="text-2xl font-bold text-gray-700">我的 <span class="text-sm font-normal text-gray-400">Analysis</span></h1>
+            <select onchange="AppState.myUid=this.value;renderApp()" class="bg-white p-2 rounded-xl text-sm border-none shadow-sm outline-none">
+                ${ROSTER.map(r=>`<option value="${r.uid}" ${r.uid===uid?'selected':''}>${r.avatar} ${r.name}</option>`).join('')}
+            </select>
+        </div>
+        <div class="glass-card p-6 mb-6 bg-gradient-to-br from-white to-doraBlue/10">
+            <div class="text-center mb-6">
+                 <div class="text-5xl mb-2">${p.avatar}</div>
+                 <div class="text-xl font-bold text-gray-700">${p.name}</div>
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1 bg-white/60 p-3 rounded-[1.5rem] text-center shadow-sm">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest">REAL COST</div>
+                    <div class="text-lg font-bold text-doraBlue">NT$${Math.round(consumption).toLocaleString()}</div>
+                </div>
+                <div class="flex-1 bg-white/60 p-3 rounded-[1.5rem] text-center shadow-sm">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest">PAID OUT</div>
+                    <div class="text-lg font-bold text-macaronPink">NT$${Math.round(outflow).toLocaleString()}</div>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-5 px-2 pb-20">
+            ${sortedCats.map(([cid, amt]) => {
+                const c = CATEGORIES.find(x=>x.id===cid);
+                const pct = Math.round((amt/consumption)*100);
+                const isExp = AppState.myCatExpand === cid;
+                const details = exps.filter(e => e.category === cid && e.shares.includes(uid)).slice(0, 20)
+                    .map(e => `<div class="flex justify-between text-[10px] text-gray-500 py-1 border-b border-gray-100 last:border-0"><span>${e.dateTime.slice(5,10)} ${e.description}</span><span>$${Math.round(e.twdEquivalent/e.shares.length)}</span></div>`).join('');
+                return `
+                <div onclick="AppState.myCatExpand = '${isExp?null:cid}'; renderApp()" class="cursor-pointer">
+                    <div class="flex justify-between items-end mb-1">
+                        <div class="flex items-center gap-2"><span class="text-lg">${c.icon}</span><span class="text-sm font-bold text-gray-600">${c.name}</span></div>
+                        <div class="text-xs font-mono text-gray-500 font-bold">$${Math.round(amt).toLocaleString()}</div>
+                    </div>
+                    <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden"><div class="h-full ${c.color} rounded-full" style="width: ${pct}%"></div></div>
+                    ${isExp ? `<div class="mt-3 bg-white/50 p-3 rounded-2xl animate-bounce-slight">${details}</div>` : ''}
+                </div>`;
+            }).join('')}
+        </div>
+    `;
 }
 
-// ==========================================
-// INITIALIZATION
-// ==========================================
-window.onload = function() {
-    renderApp();
-};
+// Init
+window.onload = function() { renderApp(); };
 
 </script>
 </body>
