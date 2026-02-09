@@ -438,29 +438,36 @@ window.updateLogLootUI = () => {
     // Always show if on page (or only if valid data? Prompt implies "Forever show")
     footer.classList.remove('opacity-0', 'translate-y-2');
     
-    const dateStr = s.date.slice(5).replace('-','/'); // MMDD
+    // 摘要文字處理邏輯
+    const dateStr = s.date.slice(5).replace('-','/');
     const payerName = (s.payer === 'u004') ? '公款' : Core.getPerson(s.payer).name;
+    const methodText = (s.paymentMethod === 'cash') ? '現金' : '信用卡'; // "卡" 改為 "信用卡"
     
-    // Generate Share Avatars String
-    let shareText = "";
-    if (JSON.stringify(s.shares.sort()) === JSON.stringify(["u004"])) {
-        shareText = "🍔";
-    } else {
-        shareText = s.shares.map(u => Core.getPerson(u).avatar).join('');
-    }
-    
-    // Resolve Rate
     let rate = 0;
     if(s.paymentMethod === 'cash') {
         const w = Core.findWallet(s.payer, s.currency);
         rate = w ? w.rate : Core.getRate(s.currency);
-    } else {
-        rate = Core.getRate(s.currency);
+    } else { 
+        rate = Core.getRate(s.currency); 
     }
 
-    // Text Black as requested
-    footerText.innerHTML = `${dateStr}，${payerName} 付，${shareText} 分攤，${s.paymentMethod==='cash'?'現金':'卡'}，${s.currency} @${rate}`;
-}
+    // 第一行：誰付、分攤
+    let line1 = "";
+    if (s.payer === 'u004' && s.shares.includes('u004')) {
+        line1 = `${dateStr}，公款付，大家分攤`; // 這是你要求的順口文案
+    } else {
+        const shareAvatars = s.shares.map(u => Core.getPerson(u).avatar).join('');
+        line1 = `${dateStr}，${payerName} 付，${shareAvatars} 分攤`;
+    }
+    
+    // 第二行：支付細節
+    let line2 = `${methodText}，${s.currency} @${rate}`;
+
+    // 渲染成兩行，文字顏色設為黑色
+    footerText.innerHTML = `
+        <div class="text-black font-bold text-sm">${line1}</div>
+        <div class="text-black opacity-80 text-xs mt-0.5">${line2}</div>
+    `;}
 
 // Log Loot Actions
 window.cycleLogCurrency = () => {
@@ -497,23 +504,26 @@ window.toggleLogDrawer = () => { AppState.logLoot.isDrawerOpen = !AppState.logLo
 window.toggleLogShareUID = (uid) => {
     const s = AppState.logLoot;
     
-    // 1. Modify Shares
+    // 【關鍵修正】：如果目前名單裡只有 u004 (公款)，且使用者點擊了真人
+    // 就必須先把 u004 踢掉，否則 u004 會留在背景刪不掉
+    if (s.shares.includes('u004') && uid !== 'u004') {
+        s.shares = s.shares.filter(u => u !== 'u004');
+    }
+
     if (s.shares.includes(uid)) {
-        if (s.shares.length > 1) s.shares = s.shares.filter(u => u !== uid);
+        // 如果點擊的對象已在名單內，且名單不只一人，則移除
+        if (s.shares.length > 1) {
+            s.shares = s.shares.filter(u => u !== uid);
+        }
     } else {
+        // 如果不在名單內，且點擊的是真人，確保 u004 不會同時存在
+        if (uid !== 'u004') {
+            s.shares = s.shares.filter(u => u !== 'u004');
+        }
         s.shares.push(uid);
     }
-    
-    // 2. Sync Quick Group State
-    const sortedShares = [...s.shares].sort().join(',');
-    if (sortedShares === 'u001') s.groupIndex = 0; // Solo
-    else if (sortedShares === 'u001,u002') s.groupIndex = 1; // Duo
-    else if (sortedShares === 'u004') s.groupIndex = 2; // Shared
-    else s.groupIndex = -1; // Custom / Undefined
-
     renderApp();
 }
-
 window.submitExpense = () => {
     const s = AppState.logLoot;
     if(!s.desc || s.amount <= 0) return;
