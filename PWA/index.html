@@ -115,9 +115,10 @@
 
 <div id="app-container">
     <main id="main-content" class="p-4 pt-6"></main>
-    <div id="summary-footer" class="fixed bottom-[90px] left-0 right-0 max-w-[500px] mx-auto text-center pointer-events-none z-40 transition-all duration-300 opacity-0 translate-y-2">
-        <span id="summary-text" class="inline-block px-5 py-1 text-black font-bold leading-tight">
-        </span>
+
+    <div id="summary-footer" class="fixed bottom-[90px] left-0 right-0 max-w-[500px] mx-auto text-center pointer-events-none z-[40] transition-all duration-300 opacity-0 translate-y-2">
+        <div id="summary-text" class="bg-white/95 backdrop-blur px-5 py-3 rounded-3xl text-sm shadow-xl border border-gray-100 ring-1 ring-black/5 inline-block min-w-[200px]">
+        </div>
     </div>
 
     <nav class="fixed bottom-0 left-0 right-0 max-w-[500px] mx-auto glass-nav pb-6 pt-3 px-6 z-50 rounded-t-[2.5rem]">
@@ -239,22 +240,21 @@ const Core = {
 // ==========================================
 
 let AppState = {
-   currentPage: 'logloot',
-   
-   logLoot: {
-       desc: "", 
-       amount: "", 
-       currency: "JPY",
-       payer: "u001", 
-       shares: ["u001"], 
-       groupIndex: 0,
-       paymentMethod: "cash", 
-       category: "food",
-       date: new Date().toISOString().slice(0,10),
-       notes: "", 
-       isDrawerOpen: false, // 記得這裡要加逗號
-       isAdvancedMode: false // 這裡新增一個屬性，控制模式切換
-   },
+    currentPage: 'logloot',
+    
+    logLoot: {
+        desc: "", 
+        amount: "", 
+        currency: "JPY",
+        payer: "u001", 
+        shares: ["u001"], 
+        // groupIndex removed as we use cycleQuickGroup logic directly
+        paymentMethod: "cash", 
+        category: "food",
+        date: new Date().toISOString().slice(0,10),
+        notes: "", 
+        isAdvancedMode: false // New Switching State
+    },
 
     history: {
         dateRange: { start: null, end: null },
@@ -310,207 +310,184 @@ function renderApp() {
 }
 
 // ------------------------------------------
-// PAGE: LOG LOOT (記帳)
-// ------------------------------------------
-// PAGE: LOG LOOT (記帳) - 模式切換版 (Input Mode Switching)
+// PAGE: LOG LOOT (記帳) - MODE SWITCHING REFACTOR
 // ------------------------------------------
 
 function renderLogLoot(container) {
     const s = AppState.logLoot;
     const payerPerson = Core.getPerson(s.payer);
-
-    // 計算 Quick Group 標籤顯示
+  
+    // Determine Quick Group Display Label
     let groupNameDisplay = "自定義";
     const shareStr = [...s.shares].sort().join(',');
     if (shareStr === 'u004') groupNameDisplay = 'Shared';
-    else if (shareStr === 'u001') groupNameDisplay = 'Smile';
-    else if (shareStr === 'u002') groupNameDisplay = 'Jiani';
-    else if (shareStr === 'u003') groupNameDisplay = 'Dora';
+    else if (shareStr === 'u001') groupNameDisplay = 'Solo';
+    else if (shareStr === 'u001,u002') groupNameDisplay = 'Duo';
 
     container.innerHTML = `
-        <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 border-b border-gray-100 max-w-[500px] mx-auto">
-            <div class="grid grid-cols-4 gap-3 mb-4 h-16">
+        <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
+            
+            <div class="grid grid-cols-4 gap-2 mb-2 h-14">
                  <input type="text" id="inp-desc" value="${s.desc}" placeholder="項目..."
                     oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
                     class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
                  
-                 <button onclick="cycleLogCurrency()" class="col-span-1 h-full rounded-giant bg-macaronYellow text-gray-700 font-bold shadow-sm flex items-center justify-center active:scale-95 transition-transform text-lg">
+                 <button onclick="cycleLogCurrency()" class="col-span-1 h-full rounded-giant bg-macaronYellow text-gray-700 font-bold shadow-sm flex items-center justify-center active:scale-95 text-lg">
                     ${s.currency}
                  </button>
             </div>
 
-            <div class="grid grid-cols-[2fr_1fr] gap-3 h-16 mb-5">
+            <div class="grid grid-cols-[2fr_1fr] gap-2 h-14 mb-2">
                  <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="0" 
                     oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') submitExpense()"
-                    class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white focus:ring-2 ring-macaronPink/50 placeholder-gray-200">
+                    class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white border-none focus:ring-2 ring-macaronPink/50">
                  
                  <button id="btn-submit" onclick="submitExpense()" class="h-full rounded-giant bg-gray-200 text-gray-400 flex items-center justify-center transition-all active:scale-95">
-                    <i data-lucide="banknote" class="w-8 h-8"></i>
+                    <i data-lucide="banknote" class="w-7 h-7"></i>
                  </button>
             </div>
 
-            <div class="grid grid-cols-4 gap-3 mb-4">
+            <div class="grid grid-cols-4 gap-2 mb-2">
                 ${CATEGORIES.map(c => `
-                    <button onclick="setLogCategory('${c.id}')" class="aspect-square rounded-[1.8rem] flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-90 ${s.category === c.id ? c.color + ' ring-4 ring-white ring-offset-2 scale-105 shadow-md' : 'bg-white'}">
-                        <span class="text-2xl">${c.icon}</span>
-                        <span class="text-[10px] text-gray-500 font-bold">${c.name}</span>
+                    <button onclick="setLogCategory('${c.id}')" class="aspect-square rounded-[1.5rem] flex flex-col items-center justify-center shadow-sm transition-all active:scale-90 ${s.category === c.id ? c.color + ' ring-2 ring-white scale-105' : 'bg-white'}">
+                        <span class="text-xl">${c.icon}</span>
+                        <span class="text-[9px] text-gray-500 font-bold">${c.name}</span>
                     </button>
                 `).join('')}
             </div>
 
-            <div class="flex justify-center">
-                <button onclick="switchInputMode(true)" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <i data-lucide="chevron-down" class="w-6 h-6 text-gray-400"></i>
+            <div class="relative">
+                <div class="bg-white rounded-giant p-3 shadow-sm border border-gray-100 flex justify-between items-center divide-x divide-gray-100">
+                    <button onclick="cycleLogPayer()" class="flex-1 flex flex-col items-center active:opacity-60">
+                        <span class="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Payer</span>
+                        <div class="flex items-center gap-1">
+                            <span class="text-lg">${payerPerson.avatar}</span>
+                            <span class="text-[10px] font-bold text-gray-600">${payerPerson.name}</span>
+                        </div>
+                    </button>
+
+                    <button onclick="cycleQuickGroup()" class="flex-1 flex flex-col items-center active:opacity-60">
+                        <span class="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Shares</span>
+                        <span class="text-xs font-bold ${groupNameDisplay !== '自定義' ? 'text-doraBlue' : 'text-gray-600'}">${groupNameDisplay}</span>
+                    </button>
+
+                    <button onclick="cycleLogMethod()" class="flex-1 flex flex-col items-center active:opacity-60">
+                        <span class="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Method</span>
+                        <span class="text-xl font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
+                            ${s.paymentMethod === 'cash' ? '💵' : '💳'}
+                        </span>
+                    </button>
+                </div>
+                
+                <button onclick="switchInputMode(true)" class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white rounded-full p-0.5 shadow border border-gray-50 z-10 active:scale-90 transition-transform">
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-300"></i>
                 </button>
             </div>
         </div>
 
-        <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white min-h-screen overflow-y-auto pb-40 max-w-[500px] mx-auto">
-            <div class="p-4">
-                <div class="flex justify-between items-center mb-8">
-                    <button onclick="switchInputMode(false)" class="flex items-center text-gray-400 font-bold">
-                        <i data-lucide="chevron-up" class="w-5 h-5 mr-1"></i> 返回
-                    </button>
-                    <span class="text-lg font-bold">高級設定</span>
-                    <button onclick="switchInputMode(false)" class="bg-black text-white px-5 py-1.5 rounded-full text-sm font-bold shadow-md active:scale-95">完成</button>
-                </div>
+        <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white h-screen overflow-hidden max-w-[500px] mx-auto flex flex-col">
+            <div class="p-6 pb-2 flex justify-between items-center">
+                <button onclick="switchInputMode(false)" class="text-gray-400 font-bold text-sm">取消</button>
+                <span class="text-base font-bold text-gray-300 uppercase tracking-widest">Advanced</span>
+                <button onclick="switchInputMode(false)" class="bg-black text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-md">完成</button>
+            </div>
 
-                <div class="space-y-8">
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">PAYER</label>
-                            <div class="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                                ${['u001','u002','u004'].map(uid => `
-                                    <button onclick="AppState.logLoot.payer='${uid}'; renderApp();" class="flex-1 py-2 rounded-xl text-lg transition-all ${s.payer===uid ? 'bg-white shadow-md scale-105' : 'opacity-30 grayscale'}">
-                                        ${Core.getPerson(uid).avatar}
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-                        <div class="w-28">
-                            <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">METHOD</label>
-                            <button onclick="cycleLogMethod()" class="w-full h-[52px] bg-gray-50 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-gray-100">
-                                ${s.paymentMethod === 'cash' ? '💵' : '💳'}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-3 font-bold tracking-widest ml-1">SHARES (${groupNameDisplay})</label>
-                        <div class="flex gap-4 justify-between px-2">
-                            ${ROSTER.filter(r => r.uid !== 'u004').map(r => {
-                                const isSelected = s.shares.includes(r.uid);
-                                return `
-                                <div onclick="toggleLogShareUID('${r.uid}')" class="flex flex-col items-center gap-2 cursor-pointer group">
-                                    <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-sm border-2 transition-all ${isSelected ? 'border-black bg-white scale-110 shadow-md' : 'border-transparent bg-gray-50 opacity-30 grayscale'}">
-                                        ${r.avatar}
-                                    </div>
-                                    <span class="text-[10px] font-bold ${isSelected ? 'text-black' : 'text-gray-300'}">${r.name}</span>
-                                </div>`;
-                            }).join('')}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">DATE</label>
-                        <input type="date" value="${s.date}" onchange="AppState.logLoot.date=this.value; updateLogLootUI()"
-                            class="w-full p-4 rounded-2xl bg-gray-50 text-gray-600 font-bold border border-gray-100 outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-2 font-bold tracking-widest ml-1">MEMO</label>
-                        <textarea placeholder="寫點什麼..." rows="3" oninput="AppState.logLoot.notes=this.value"
-                            class="w-full p-4 rounded-2xl bg-gray-50 text-base text-gray-600 border border-gray-100 shadow-inner resize-none outline-none">${s.notes || ''}</textarea>
+            <div class="flex-1 overflow-y-auto px-6 space-y-6 pt-2">
+                <div class="bg-gray-50 p-4 rounded-3xl">
+                    <label class="block text-[10px] text-gray-400 mb-3 font-bold uppercase text-center tracking-tighter">成員分攤 (點選真人剔除公款)</label>
+                    <div class="flex justify-around items-center">
+                        ${ROSTER.filter(r => r.uid !== 'u004').map(r => {
+                            const isSelected = s.shares.includes(r.uid);
+                            return `
+                            <div onclick="toggleLogShareUID('${r.uid}')" class="flex flex-col items-center gap-1 cursor-pointer">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all ${isSelected ? 'bg-white shadow-md border-2 border-black scale-110' : 'opacity-20 grayscale'}">
+                                    ${r.avatar}
+                                </div>
+                                <span class="text-[9px] font-bold ${isSelected ? 'text-black' : 'text-gray-300'}">${r.name}</span>
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">交易日期</label>
+                    <input type="date" value="${s.date}" onchange="AppState.logLoot.date=this.value; updateLogLootUI()"
+                        class="w-full p-3 rounded-2xl bg-gray-50 text-lg font-bold border-none outline-none text-gray-600">
+                </div>
+
+                <div class="flex flex-col gap-1 flex-1 min-h-[200px]">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">詳細備註 (Note)</label>
+                    <textarea placeholder="在這裡寫下備註..." oninput="AppState.logLoot.notes=this.value"
+                        class="w-full p-5 rounded-3xl bg-gray-50 text-2xl font-bold text-gray-700 border-none h-full resize-none outline-none focus:bg-gray-100 transition-all">${s.notes || ''}</textarea>
+                </div>
+                
+                <div class="h-24"></div>
+            </div>
+
+            <div class="absolute bottom-6 left-0 right-0 px-4 text-center pointer-events-none">
+                 <div id="advanced-summary-text" class="bg-white/95 backdrop-blur px-5 py-3 rounded-3xl text-sm shadow-xl border border-gray-100 ring-1 ring-black/5 inline-block min-w-[200px]">
+                 </div>
             </div>
         </div>
-
-        <div id="ContentScrollArea" class="${s.isAdvancedMode ? 'hidden' : 'block'} pt-[340px] pb-32 max-w-[500px] mx-auto">
-             </div>
-    `;
+        
+        `;
     lucide.createIcons();
     updateLogLootUI();
 }
 
-// 核心：UI 狀態與摘要更新
-window.updateLogLootUI = () => {
-    const footer = document.getElementById('summary-footer');
-    const footerText = document.getElementById('summary-text');
-    const submitBtn = document.getElementById('btn-submit');
-    const s = AppState.logLoot;
+// ------------------------------------------
+// UPDATED LOGIC FUNCTIONS
+// ------------------------------------------
 
-    // 1. Submit 按鈕狀態判斷
-    const isValid = s.desc.trim() !== "" && parseFloat(s.amount) > 0;
-    if(submitBtn && !submitBtn.classList.contains('animate-flash-green')) {
-        if(isValid) {
-            submitBtn.className = "h-full rounded-giant bg-macaronPink text-white shadow-lg flex items-center justify-center transition-all active:scale-95";
-        } else {
-            submitBtn.className = "h-full rounded-giant bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed flex items-center justify-center";
-        }
-    }
-
-    // 2. 摘要顯示邏輯 (純文字、無底框、二行化)
-    if (AppState.currentPage !== 'logloot') {
-        footer.classList.add('opacity-0');
-        return;
-    }
-    footer.classList.remove('opacity-0', 'translate-y-2');
-
-    const dateStr = s.date.slice(5).replace('-','/');
-    const payerName = (s.payer === 'u004') ? '公款' : Core.getPerson(s.payer).name;
-    const methodText = (s.paymentMethod === 'cash') ? '現金' : '信用卡';
-    
-    let rate = (s.paymentMethod === 'cash') 
-               ? (Core.findWallet(s.payer, s.currency)?.rate || Core.getRate(s.currency)) 
-               : Core.getRate(s.currency);
-
-    let line1 = "";
-    if (s.payer === 'u004' && s.shares.includes('u004')) {
-        line1 = `${dateStr}，公款付，大家分攤`;
-    } else {
-        const shareAvatars = s.shares.map(u => Core.getPerson(u).avatar).join('');
-        line1 = `${dateStr}，${payerName} 付，${shareAvatars} 分攤`;
-    }
-    let line2 = `${methodText}，${s.currency} @${rate}`;
-
-    footerText.innerHTML = `
-        <div class="text-sm text-black font-bold">${line1}</div>
-        <div class="text-xs text-black opacity-60 mt-0.5">${line2}</div>
-    `;
-}
-
-// 模式切換邏輯
+// 1. Mode Switching
 window.switchInputMode = (val) => {
     AppState.logLoot.isAdvancedMode = val;
     renderApp();
 }
 
-window.cycleLogCurrency = () => {
-    const currs = Object.keys(DEFAULT_RATES);
-    const idx = currs.indexOf(AppState.logLoot.currency);
-    AppState.logLoot.currency = currs[(idx + 1) % currs.length];
+// 2. Cycle Payer
+window.cycleLogPayer = () => {
+    const payers = ['u001', 'u002', 'u004'];
+    const idx = payers.indexOf(AppState.logLoot.payer);
+    AppState.logLoot.payer = payers[(idx + 1) % payers.length];
     renderApp();
 }
 
-window.setLogCategory = (id) => {
-    AppState.logLoot.category = id; 
-    renderApp(); 
+// 3. Cycle Quick Group (Solo -> Duo -> Shared)
+window.cycleQuickGroup = () => {
+    const s = AppState.logLoot;
+    const shareStr = [...s.shares].sort().join(',');
+    
+    if (shareStr === 'u001') {
+        s.shares = ['u001', 'u002']; // Duo
+    } else if (shareStr === 'u001,u002') {
+        s.shares = ['u004'];         // Shared
+        s.payer = 'u004';            // Auto set payer to u004
+    } else {
+        s.shares = ['u001'];         // Solo
+        if (s.payer === 'u004') s.payer = 'u001';
+    }
+    renderApp();
 }
 
+// 4. Method Switching (Credit Card naming handled in UI)
 window.cycleLogMethod = () => {
     AppState.logLoot.paymentMethod = (AppState.logLoot.paymentMethod === 'cash') ? 'credit' : 'cash';
     renderApp();
 }
 
-// 高級分攤邏輯：手動選人自動互斥掉公款 (u004)
+// 5. Mutually Exclusive Shares Logic
 window.toggleLogShareUID = (uid) => {
     const s = AppState.logLoot;
+    
+    // Auto-remove u004 if a real person is clicked
     if (uid !== 'u004') {
         s.shares = s.shares.filter(u => u !== 'u004');
     }
+    
+    // Toggle logic
     if (s.shares.includes(uid)) {
         if (s.shares.length > 1) s.shares = s.shares.filter(u => u !== uid);
     } else {
@@ -519,6 +496,7 @@ window.toggleLogShareUID = (uid) => {
     renderApp();
 }
 
+// 6. Submit Logic (Silent, no alert)
 window.submitExpense = () => {
     const s = AppState.logLoot;
     if(!s.desc || s.amount <= 0) return;
@@ -529,7 +507,10 @@ window.submitExpense = () => {
     if (s.paymentMethod === 'cash') {
         const w = Core.findWallet(s.payer, s.currency);
         if(!w) {
-            if (s.payer === 'u004') return alert(`請先建立公款的 ${s.currency} 錢包！`);
+            // For Shared wallet, we might alert, but generally we want silent flow. 
+            // Let's keep a soft check but not block aggressively with alerts if possible, 
+            // but wallet logic requires valid walletId for balance deduction.
+            if (s.payer === 'u004') return alert(`請先建立公款錢包！`);
             appliedRate = Core.getRate(s.currency);
         } else {
             walletId = w.walletId;
@@ -551,19 +532,78 @@ window.submitExpense = () => {
     });
 
     const btn = document.getElementById('btn-submit');
+    
+    // Reset inputs
     s.desc = ""; s.amount = ""; s.notes = "";
     
+    // Flash Animation
     if(btn) {
-        btn.innerHTML = '<i data-lucide="check-circle" class="w-8 h-8"></i>';
+        btn.innerHTML = '<i data-lucide="check-circle" class="w-7 h-7"></i>';
         btn.classList.add('animate-flash-green');
     }
 
     setTimeout(() => {
         renderApp();
+        // Focus back to desc
         const newDesc = document.getElementById('inp-desc');
         if(newDesc) newDesc.focus(); 
     }, 400);
 }
+
+// 7. Update UI (Double-line Summary)
+window.updateLogLootUI = () => {
+    const s = AppState.logLoot;
+    
+    // Target both global and advanced footers
+    const footers = [
+        { container: document.getElementById('summary-footer'), text: document.getElementById('summary-text') },
+        { container: document.getElementById('advanced-summary-text'), text: document.getElementById('advanced-summary-text') }
+    ];
+
+    const dateStr = s.date.slice(5).replace('-','/');
+    const payerName = (s.payer === 'u004') ? '公款' : Core.getPerson(s.payer).name;
+    const methodText = (s.paymentMethod === 'cash') ? '現金' : '信用卡';
+    const rate = (s.paymentMethod === 'cash') 
+                 ? (Core.findWallet(s.payer, s.currency)?.rate || Core.getRate(s.currency)) 
+                 : Core.getRate(s.currency);
+
+    // Wording Logic
+    let line1 = "";
+    if (s.payer === 'u004' && s.shares.includes('u004')) {
+        line1 = `${dateStr}，公款付，大家分攤`;
+    } else {
+        const shareAvatars = s.shares.map(u => Core.getPerson(u).avatar).join('');
+        line1 = `${dateStr}，${payerName} 付，${shareAvatars} 分攤`;
+    }
+    const line2 = `${methodText}，${s.currency} @${rate}`;
+    const htmlContent = `
+        <div class="text-sm text-black font-bold">${line1}</div>
+        <div class="text-xs text-black opacity-60 mt-0.5">${line2}</div>
+    `;
+
+    // Apply to visible footers
+    if (AppState.currentPage !== 'logloot') {
+        footers[0].container.classList.add('opacity-0');
+    } else {
+        footers[0].container.classList.remove('opacity-0');
+        // Update both texts
+        footers.forEach(f => {
+            if(f.text) f.text.innerHTML = htmlContent;
+        });
+    }
+    
+    // Submit btn state update logic remains ...
+    const submitBtn = document.getElementById('btn-submit');
+    const isValid = s.desc.trim() !== "" && parseFloat(s.amount) > 0;
+    if(submitBtn && !submitBtn.classList.contains('animate-flash-green')) {
+         if(isValid) {
+            submitBtn.className = "h-full rounded-giant bg-macaronPink text-white shadow-lg flex items-center justify-center transition-all active:scale-95";
+        } else {
+            submitBtn.className = "h-full rounded-giant bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed flex items-center justify-center";
+        }
+    }
+}
+
 // ------------------------------------------
 // PAGE: WALLET
 // ------------------------------------------
@@ -1007,11 +1047,7 @@ function renderMy(container) {
         </div>
     `;
 }
-window.switchInputMode = (val) => {
-    AppState.logLoot.isAdvancedMode = val;
-    renderApp();
-    lucide.createIcons(); // 確保箭頭圖標正確載入
-};
+
 window.onload = function() { renderApp(); };
 
 </script>
