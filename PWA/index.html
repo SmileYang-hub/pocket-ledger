@@ -327,7 +327,7 @@ function renderLogLoot(container) {
     container.innerHTML = `
         <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
             
-            <div class="grid grid-cols-4 gap-2 mb-2 h-14">
+            <div class="grid grid-cols-4 gap-2 mb-3 h-16">
                  <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot✨"
                     oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
@@ -338,7 +338,7 @@ function renderLogLoot(container) {
                  </button>
             </div>
 
-            <div class="grid grid-cols-[2fr_1fr] gap-2 h-14 mb-2">
+            <div class="grid grid-cols-[2fr_1fr] gap-2 h-16 mb-3">
                  <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="Poof    💸" 
                     oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') submitExpense()"
@@ -348,22 +348,24 @@ function renderLogLoot(container) {
                     <i data-lucide="banknote" class="w-7 h-7"></i>
                  </button>
             </div>
-
             <div class="grid grid-cols-4 gap-2 mb-2">
-                ${CATEGORIES.map(c => `
-                    <button onclick="setLogCategory('${c.id}')" class="aspect-square rounded-[1.5rem] flex flex-col items-center justify-center shadow-sm transition-all active:scale-90 ${s.category === c.id ? c.color + ' ring-2 ring-white scale-105' : 'bg-white'}">
-                        <span class="text-xl">${c.icon}</span>
-                        <span class="text-[9px] text-gray-500 font-bold">${c.name}</span>
-                    </button>
-                `).join('')}
-            </div>
+    ${CATEGORIES.map(c => `
+        <button onclick="setLogCategory('${c.id}')" class="aspect-square rounded-[1.5rem] flex flex-col items-center justify-center shadow-sm transition-all active:scale-90 ${s.category === c.id ? c.color + ' ring-2 ring-white scale-105' : 'bg-white'}">
+            
+            <span class="text-3xl mb-1">${c.icon}</span>
+            
+            <span class="text-xs text-gray-500 font-bold">${c.name}</span>
+            
+        </button>
+    `).join('')}
+</div>
 
 
 <div class="relative">
     <div class="bg-white rounded-giant p-4 shadow-sm border border-gray-100 flex justify-between items-center divide-x divide-gray-100">
         
         <button onclick="cycleLogPayer()" class="flex-1 flex flex-col items-center active:opacity-60">
-            <span class="text-[11px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Payer</span>
+            <span class="text-[12px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Payer</span>
             <div class="flex items-center gap-2">
                 <span class="text-2xl">${payerPerson.avatar}</span>
                 <span class="text-sm font-bold text-gray-700">${payerPerson.name}</span>
@@ -371,13 +373,13 @@ function renderLogLoot(container) {
         </button>
 
         <button onclick="cycleQuickGroup()" class="flex-1 flex flex-col items-center active:opacity-60">
-            <span class="text-[11px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Shares</span>
+            <span class="text-[12px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Shares</span>
             <span class="text-base font-bold ${groupNameDisplay !== '自定義' ? 'text-doraBlue' : 'text-gray-600'}">${groupNameDisplay}</span>
         </button>
 
         <button onclick="cycleLogMethod()" class="flex-1 flex flex-col items-center active:opacity-60">
-            <span class="text-[11px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Method</span>
-            <span class="text-2xl font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
+            <span class="text-[12px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Method</span>
+            <span class="text-4xl font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
                 ${s.paymentMethod === 'cash' ? '💵' : '💳'}
             </span>
         </button>
@@ -387,8 +389,6 @@ function renderLogLoot(container) {
         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
     </button>
 </div>
-            
-
         </div>
 
         <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white h-screen overflow-hidden max-w-[500px] mx-auto flex flex-col">
