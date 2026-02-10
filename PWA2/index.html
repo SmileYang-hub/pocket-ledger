@@ -336,7 +336,7 @@ function renderLogLoot(container) {
     container.innerHTML = `
         <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
             
-            <div class="grid grid-cols-4 gap-2 mb-3 h-16 pt-[env(safe-area-inset-top)]">
+            <div class="grid grid-cols-4 gap-2 mb-3 h-16 pt-[calc(env(safe-area-inset-top)-10px)]">
                  <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot       ✨"
                     oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
@@ -401,7 +401,7 @@ function renderLogLoot(container) {
         </div>
 
         <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white h-screen overflow-hidden max-w-[500px] mx-auto flex flex-col">
-            <div class="p-6 pb-2 flex justify-between items-center pt-[env(safe-area-inset-top)]">
+            <div class="p-6 pb-2 flex justify-between items-center pt-[calc(env(safe-area-inset-top)-10px)]">
                 <button onclick="switchInputMode(false)" class="text-gray-400 font-bold text-sm">取消</button>
                 <span class="text-base font-bold text-gray-300 uppercase tracking-widest">Advanced</span>
                 <button onclick="switchInputMode(false)" class="bg-black text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-md">完成</button>
@@ -637,7 +637,7 @@ function renderWallet(container) {
     const allExpenses = DB.getExpenses();
 
     container.innerHTML = `
-        <div class="mb-6 px-2 pt-[env(safe-area-inset-top)]">
+        <div class="mb-6 px-2 pt-[calc(env(safe-area-inset-top)-10px)]">
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold text-gray-700">錢包 <span class="text-sm font-normal text-gray-400">Assets</span></h1>
                 <button onclick="addWalletPrompt()" class="bg-doraBlue text-white px-4 py-2 rounded-full shadow hover:opacity-90 transition">
@@ -1026,7 +1026,7 @@ function renderMy(container) {
     const sortedCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
 
     container.innerHTML = `
-        <div class="flex items-center justify-between mb-6 px-2 pt-[env(safe-area-inset-top)]">
+        <div class="flex items-center justify-between mb-6 px-2 pt-[calc(env(safe-area-inset-top)-10px)]">
             <h1 class="text-2xl font-bold text-gray-700">我的 <span class="text-sm font-normal text-gray-400">Analysis</span></h1>
             <select onchange="AppState.myUid=this.value;renderApp()" class="bg-white p-2 rounded-xl text-lg border-none shadow-sm outline-none">
                 ${ROSTER.map(r=>`<option value="${r.uid}" ${r.uid===uid?'selected':''}>${r.avatar} ${r.name}</option>`).join('')}
