@@ -655,9 +655,10 @@ function renderWallet(container) {
                 return `
                 <div class="glass-card p-5 relative overflow-hidden transition-all duration-300 transform ${isExp ? 'border-doraBlue ring-2 ring-doraBlue/20' : ''}">
                     <div onclick="toggleWalletExp('${w.walletId}')" class="flex justify-between items-start cursor-pointer">
+
+        
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-white/60 rounded-full flex items-center justify-center text-3xl shadow-sm">
-                                ${p.avatar}
+                             <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-3xl shadow-md border-2 border-solid border-black transition-all duration-300 ${isExp ? 'scale-110' : ''}">                                ${p.avatar}
                             </div>
                             <div>
                                 <div class=" text-base text-gray-800 font- lucide tracking-widest uppercase mb-1">${w.currency}💰</div>
