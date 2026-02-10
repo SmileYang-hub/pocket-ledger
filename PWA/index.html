@@ -328,7 +328,7 @@ function renderLogLoot(container) {
         <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
             
             <div class="grid grid-cols-4 gap-2 mb-3 h-16">
-                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot         ✨"
+                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot       ✨"
                     oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
                     class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
