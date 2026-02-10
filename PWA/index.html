@@ -1048,6 +1048,19 @@ function renderMy(container) {
     `;
 }
 
+// 補回：切換貨幣邏輯
+window.cycleLogCurrency = () => {
+    const currs = Object.keys(DEFAULT_RATES);
+    const idx = currs.indexOf(AppState.logLoot.currency);
+    AppState.logLoot.currency = currs[(idx + 1) % currs.length];
+    renderApp(); // 必須 renderApp 才能看到按鈕文字改變
+}
+
+// 補回：設定分類邏輯
+window.setLogCategory = (cid) => {
+    AppState.logLoot.category = cid;
+    renderApp(); // 必須 renderApp 才能看到選中狀態的顏色變化
+}
 window.onload = function() { renderApp(); };
 
 </script>
