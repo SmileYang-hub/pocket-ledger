@@ -318,7 +318,7 @@ function renderLogLoot(container) {
     const payerPerson = Core.getPerson(s.payer);
   
     // Determine Quick Group Display Label
-    let groupNameDisplay = "自定義";
+    let groupNameDisplay = "Custom";
     const shareStr = [...s.shares].sort().join(',');
     if (shareStr === 'u004') groupNameDisplay = 'Shared';
     else if (shareStr === 'u001') groupNameDisplay = 'Solo';
@@ -328,7 +328,7 @@ function renderLogLoot(container) {
         <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
             
             <div class="grid grid-cols-4 gap-2 mb-3 h-16">
-                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot✨"
+                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot         ✨"
                     oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
                     class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
@@ -354,7 +354,7 @@ function renderLogLoot(container) {
             
             <span class="text-3xl mb-1">${c.icon}</span>
             
-            <span class="text-xs text-gray-500 font-bold">${c.name}</span>
+            <span class="text-sm text-gray-500 font-bold">${c.name}</span>
             
         </button>
     `).join('')}
@@ -421,11 +421,18 @@ function renderLogLoot(container) {
                         class="w-full p-3 rounded-2xl bg-gray-50 text-lg font-bold border-none outline-none text-gray-600">
                 </div>
 
-                <div class="flex flex-col gap-1 flex-1 min-h-[200px]">
-                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">詳細備註 (Note)</label>
-                    <textarea placeholder="在這裡寫下備註..." oninput="AppState.logLoot.notes=this.value"
-                        class="w-full p-5 rounded-3xl bg-gray-50 text-2xl font-bold text-gray-700 border-none h-full resize-none outline-none focus:bg-gray-100 transition-all">${s.notes || ''}</textarea>
-                </div>
+<div class="mb-4">
+    <div class="text-[11px] text-gray-400 font-bold uppercase mb-2 ml-4 tracking-widest">Note</div>
+    <textarea 
+        id="adv-note" 
+        rows="6" 
+        placeholder="Add some details..." 
+        oninput="AppState.logLoot.note=this.value"
+        class="w-full p-5 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-200 text-lg font-medium text-gray-700 focus:bg-white focus:border-doraBlue focus:ring-0 transition-all resize-none"
+    >${s.note || ''}</textarea>
+</div>
+                
+
                 
                 <div class="h-24"></div>
             </div>
