@@ -401,7 +401,7 @@ function renderLogLoot(container) {
         </div>
 
         <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white h-screen overflow-hidden max-w-[500px] mx-auto flex flex-col">
-            <div class="p-6 pb-2 flex justify-between items-center pt-[calc(env(safe-area-inset-top)-10px)]">
+            <div class="p-6 pb-2 flex justify-between items-center pt-[env(safe-area-inset-top)] -mt-5">
                 <button onclick="switchInputMode(false)" class="text-gray-400 font-bold text-sm">取消</button>
                 <span class="text-base font-bold text-gray-300 uppercase tracking-widest">Advanced</span>
                 <button onclick="switchInputMode(false)" class="bg-black text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-md">完成</button>
@@ -1026,7 +1026,7 @@ function renderMy(container) {
     const sortedCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
 
     container.innerHTML = `
-        <div class="flex items-center justify-between mb-6 px-2 pt-[calc(env(safe-area-inset-top)-25px)]">
+        <div class="flex items-center justify-between mb-6 px-2 pt-[env(safe-area-inset-top)] -mt-5">
             <h1 class="text-2xl font-bold text-gray-700">我的 <span class="text-sm font-normal text-gray-400">Analysis</span></h1>
             <select onchange="AppState.myUid=this.value;renderApp()" class="bg-white p-2 rounded-xl text-lg border-none shadow-sm outline-none">
                 ${ROSTER.map(r=>`<option value="${r.uid}" ${r.uid===uid?'selected':''}>${r.avatar} ${r.name}</option>`).join('')}
