@@ -339,7 +339,7 @@ function renderLogLoot(container) {
             </div>
 
             <div class="grid grid-cols-[2fr_1fr] gap-2 h-14 mb-2">
-                 <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="Poof💸" 
+                 <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="Poof    💸" 
                     oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') submitExpense()"
                     class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white border-none focus:ring-2 ring-macaronPink/50">
