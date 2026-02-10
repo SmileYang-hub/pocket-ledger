@@ -153,7 +153,7 @@
 // ==========================================
 
 const ROSTER = [
-    { uid: "u001", name: "Smile", avatar: "🚀" },
+    { uid: "u001", name: "Smile", avatar: "🐬" },
     { uid: "u002", name: "Jiani", avatar: "🌻" },
     { uid: "u003", name: "Nomad", avatar: "⚽" },
     { uid: "u004", name: "Shared", avatar: "🍔" }
@@ -170,7 +170,7 @@ const CATEGORIES = [
     { id: "other", icon: "📦", name: "其他", color: "bg-gray-100" }
 ];
 
-const DEFAULT_RATES = { "JPY": 0.22, "TWD": 1.00, "USD": 31.50, "EUR": 34.80, "KRW": 0.024 };
+const DEFAULT_RATES = { "TWD": 1.00, "USD": 31.50, "EUR": 34.80 };
 
 const QUICK_GROUPS = [
     { name: "Solo", shares: ["u001"], label: "Solo" },
@@ -241,11 +241,11 @@ const Core = {
 
 let AppState = {
     currentPage: 'logloot',
-    
+//記帳頁預設值    
     logLoot: {
         desc: "", 
         amount: "", 
-        currency: "JPY",
+        currency: "TWD",
         payer: "u001", 
         shares: ["u001"], 
         // groupIndex removed as we use cycleQuickGroup logic directly
@@ -328,7 +328,7 @@ function renderLogLoot(container) {
         <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
             
             <div class="grid grid-cols-4 gap-2 mb-2 h-14">
-                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="項目..."
+                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot✨"
                     oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
                     class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
@@ -339,7 +339,7 @@ function renderLogLoot(container) {
             </div>
 
             <div class="grid grid-cols-[2fr_1fr] gap-2 h-14 mb-2">
-                 <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="0" 
+                 <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="Poof💸" 
                     oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
                     onkeydown="if(event.key==='Enter') submitExpense()"
                     class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white border-none focus:ring-2 ring-macaronPink/50">
@@ -577,8 +577,8 @@ window.updateLogLootUI = () => {
     }
     const line2 = `${methodText}，${s.currency} @${rate}`;
     const htmlContent = `
-        <div class="text-sm text-black font-bold">${line1}</div>
-        <div class="text-xs text-black opacity-60 mt-0.5">${line2}</div>
+        <div class="text-base text-black font-bold">${line1}</div>
+        <div class="text-sm text-black opacity-60 mt-0.5">${line2}</div>
     `;
 
     // Apply to visible footers
@@ -660,7 +660,7 @@ function renderWallet(container) {
                                 ${p.avatar}
                             </div>
                             <div>
-                                <div class="text-[10px] text-gray-400 font-mono tracking-widest uppercase mb-1">${w.currency} WALLET</div>
+                                <div class=" text-base text-gray-800 font- lucide tracking-widest uppercase mb-1">${w.currency}💰</div>
                                 <div class="text-2xl font-bold text-gray-700 font-mono tracking-tight">${w.balance.toLocaleString()}</div>
                             </div>
                         </div>
@@ -668,7 +668,7 @@ function renderWallet(container) {
                             <button onclick="event.stopPropagation(); delWallet('${w.walletId}')" class="text-gray-300 hover:text-red-400 p-1">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
-                            <span class="text-[10px] text-gray-400">Rate: ${w.rate}</span>
+                            <span class="text-base text-gray-600 font-bold">Rate: ${w.rate}</span>
                         </div>
                     </div>
 
@@ -714,11 +714,11 @@ function renderWallet(container) {
 window.setWalletFilter = (uid) => { AppState.wallet.filterUid = uid; renderApp(); }
 window.toggleWalletExp = (wid) => { AppState.wallet.expandedId = (AppState.wallet.expandedId===wid) ? null : wid; renderApp(); }
 window.addWalletPrompt = () => {
-    const owner = prompt("UID (u001, u002...):", "u004");
+    const owner = prompt("UID (u001, u002...):", "u001");
     if(!ROSTER.find(r=>r.uid===owner)) return alert("UID 無效");
-    const curr = prompt("幣別 (JPY, USD...):", "JPY");
+    const curr = prompt("幣別 (TWD, EUR, USD, JPY...):", "USD");
     const amt = parseFloat(prompt("初始金額:", "50000"));
-    const rate = parseFloat(prompt("換匯匯率:", "0.22"));
+    const rate = parseFloat(prompt("換匯匯率:", "33"));
     if(curr && !isNaN(amt) && !isNaN(rate)) {
         const ws = DB.getWallets();
         ws.push({
