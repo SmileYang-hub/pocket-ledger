@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🐬 Doraemon Ledger-Smile Yang 2026.02.</title>
-    
+    <link rel="manifest" href="manifest.json">
+
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="哆啦記帳">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Iansui&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -365,21 +374,21 @@ function renderLogLoot(container) {
     <div class="bg-white rounded-giant p-4 shadow-sm border border-gray-100 flex justify-between items-center divide-x divide-gray-100">
         
         <button onclick="cycleLogPayer()" class="flex-1 flex flex-col items-center active:opacity-60">
-            <span class="text-[12px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Payer</span>
+            <span class=" text-base text-gray-400 font-bold uppercase mb-1 tracking-tight">Payer</span>
             <div class="flex items-center gap-2">
-                <span class="text-2xl">${payerPerson.avatar}</span>
+                <span class="text-3xl">${payerPerson.avatar}</span>
                 <span class="text-sm font-bold text-gray-700">${payerPerson.name}</span>
             </div>
         </button>
 
         <button onclick="cycleQuickGroup()" class="flex-1 flex flex-col items-center active:opacity-60">
-            <span class="text-[12px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Shares</span>
-            <span class="text-base font-bold ${groupNameDisplay !== '自定義' ? 'text-doraBlue' : 'text-gray-600'}">${groupNameDisplay}</span>
+            <span class=" text-base text-gray-400 font-bold uppercase mb-1 tracking-tight">Shares</span>
+            <span class=" text-lg font-bold ${groupNameDisplay !== 'Custom' ? 'text-doraBlue' : 'text-gray-600'}">${groupNameDisplay}</span>
         </button>
 
         <button onclick="cycleLogMethod()" class="flex-1 flex flex-col items-center active:opacity-60">
-            <span class="text-[12px] text-gray-400 font-bold uppercase mb-1 tracking-tight">Method</span>
-            <span class="text-4xl font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
+            <span class=" text-base text-gray-400 font-bold uppercase mb-1 tracking-tight">Method</span>
+            <span class="text-5xl font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
                 ${s.paymentMethod === 'cash' ? '💵' : '💳'}
             </span>
         </button>
@@ -927,7 +936,7 @@ function renderHistory(container) {
     const totalTwd = exps.reduce((sum, e) => sum + e.twdEquivalent, 0);
     const getCatLabel = () => f.cat===0 ? '分類' : CATEGORIES.find(c=>c.id===catOpts[f.cat]).icon;
     const getPayerLabel = () => f.payer===0 ? '支付' : Core.getPerson(payerOpts[f.payer]).avatar;
-    const getMethodLabel = () => f.method===0 ? '方式' : (methodOpts[f.method]==='cash'?'現金':'卡');
+    const getMethodLabel = () => f.method===0 ? '方式' : (methodOpts[f.method]==='cash'?'現金':'信用卡');
     const getCurrLabel = () => f.curr===0 ? '幣別' : currOpts[f.curr];
 
     container.innerHTML = `
@@ -1075,6 +1084,16 @@ window.setLogCategory = (cid) => {
 }
 window.onload = function() { renderApp(); };
 
+</script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker 準備就緒！'))
+                .catch(err => console.error('註冊失敗：', err));
+        });
+    }
 </script>
 </body>
 </html>
