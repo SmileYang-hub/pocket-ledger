@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🐬 Doraemon Ledger-Smile Yang 2026.02.</title>
+    <link rel="manifest" href="manifest.json">
+
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="哆啦記帳">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Iansui&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        doraBlue: '#8ED1FC',
+                        macaronPink: '#F9A8D4',
+                        macaronYellow: '#FDE68A',
+                        macaronGreen: '#BBF7D0',
+                        macaronPurple: '#DDD6FE',
+                        bgBase: '#F8FAFC',
+                    },
+                    fontFamily: {
+                        sans: ['Iansui', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        'giant': '2.5rem',
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 0.3s ease-in-out',
+                        'flash-green': 'flash-green 0.5s ease-in-out',
+                    },
+                    keyframes: {
+                        'bounce-slight': {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(0.99)' },
+                        },
+                        'flash-green': {
+                            '0%, 100%': { backgroundColor: '#E5E7EB', color: '#9CA3AF' }, // gray-200
+                            '50%': { backgroundColor: '#BBF7D0', color: '#15803D' }, // green-200
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F8FAFC;
+            font-family: 'Iansui', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        
+        #app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: #F8FAFC;
+            position: relative;
+            padding-bottom: 110px;
+            box-shadow: 0 0 30px rgba(142, 209, 252, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 2.5rem;
+            box-shadow: 0 8px 32px rgba(142, 209, 252, 0.1);
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        input, select, textarea {
+            outline: none;
+            background: rgba(255,255,255,0.6);
+            transition: all 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            background: #fff;
+            box-shadow: 0 0 0 2px #8ED1FC;
+        }
+
+        .drawer-content {
+            transition: max-height 0.4s ease-in-out, opacity 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .drawer-open {
+            max-height: 500px;
+            opacity: 1;
+            overflow-y: auto;
+        }
+
+        /* 大字體優化 Class */
+        .text-detail-base { font-size: 1rem; line-height: 1.5rem; }
+        .text-detail-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <main id="main-content" class="p-4 pt-6"></main>
+
+    <div id="summary-footer" class="fixed bottom-[90px] left-0 right-0 max-w-[500px] mx-auto text-center pointer-events-none z-[40] transition-all duration-300 opacity-0 translate-y-2">
+        <div id="summary-text" class="bg-white/95 backdrop-blur px-5 py-3 rounded-3xl text-sm shadow-xl border border-gray-100 ring-1 ring-black/5 inline-block min-w-[200px]">
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 left-0 right-0 max-w-[500px] mx-auto glass-nav pb-6 pt-3 px-6 z-50 rounded-t-[2.5rem]">
+        <div class="flex justify-between items-center text-gray-400">
+            <button onclick="router.navigate('logloot')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="logloot">
+                <i data-lucide="pen-tool" class="w-6 h-6"></i>
+                <span class="text-[10px]">記帳</span>
+            </button>
+            <button onclick="router.navigate('wallet')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="wallet">
+                <i data-lucide="wallet" class="w-6 h-6"></i>
+                <span class="text-[10px]">錢包</span>
+            </button>
+            <button onclick="router.navigate('my')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="my">
+                <i data-lucide="user" class="w-6 h-6"></i>
+                <span class="text-[10px]">我的</span>
+            </button>
+            <button onclick="router.navigate('history')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="history">
+                <i data-lucide="history" class="w-6 h-6"></i>
+                <span class="text-[10px]">歷史</span>
+            </button>
+            <button onclick="router.navigate('settings')" class="nav-btn flex flex-col items-center gap-1 w-12 transition-colors duration-300" data-page="settings">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+                <span class="text-[10px]">設定</span>
+            </button>
+        </div>
+    </nav>
+</div>
+
+<script>
+// ==========================================
+// 1. DATA & CONSTANTS
+// ==========================================
+
+const ROSTER = [
+    { uid: "u001", name: "Smile", avatar: "🐬" },
+    { uid: "u002", name: "Jiani", avatar: "🌻" },
+    { uid: "u003", name: "Nomad", avatar: "⚽" },
+    { uid: "u004", name: "Shared", avatar: "🍔" }
+];
+
+const CATEGORIES = [
+    { id: "food", icon: "🍴", name: "餐飲", color: "bg-macaronPink" },
+    { id: "transport", icon: "🚄", name: "交通", color: "bg-doraBlue" },
+    { id: "stay", icon: "🏠", name: "住宿", color: "bg-macaronYellow" },
+    { id: "ticket", icon: "🎫", name: "門票", color: "bg-macaronGreen" },
+    { id: "supply", icon: "🛒", name: "補給", color: "bg-macaronPurple" },
+    { id: "gift", icon: "🎁", name: "手信", color: "bg-pink-200" },
+    { id: "gear", icon: "🧦", name: "裝備", color: "bg-green-200" },
+    { id: "other", icon: "📦", name: "其他", color: "bg-gray-100" }
+];
+
+const DEFAULT_RATES = { "TWD": 1.00, "USD": 31.50, "EUR": 34.80 };
+
+const QUICK_GROUPS = [
+    { name: "Solo", shares: ["u001"], label: "Solo" },
+    { name: "Duo", shares: ["u001", "u002"], label: "Duo" },
+    { name: "Shared", shares: ["u004"], label: "Shared" }
+];
+
+// ==========================================
+// 2. CORE STORAGE & LOGIC
+// ==========================================
+
+const DB = {
+    get: (key, def) => JSON.parse(localStorage.getItem(key) || JSON.stringify(def)),
+    set: (key, val) => localStorage.setItem(key, JSON.stringify(val)),
+    getExpenses: () => DB.get('dl_expenses_v2', []),
+    setExpenses: (d) => DB.set('dl_expenses_v2', d),
+    getWallets: () => DB.get('dl_wallets_v2', []),
+    setWallets: (d) => DB.set('dl_wallets_v2', d),
+    getRates: () => DB.get('dl_rates_v2', DEFAULT_RATES),
+    setRates: (d) => DB.set('dl_rates_v2', d),
+};
+
+const Core = {
+    getRate: (curr) => DB.getRates()[curr] || 1,
+    getPerson: (uid) => ROSTER.find(r => r.uid === uid) || { name: 'Unknown', avatar: '❓' },
+    
+    findWallet: (ownerUID, currency) => {
+        return DB.getWallets().find(w => w.ownerUID === ownerUID && w.currency === currency);
+    },
+
+    updateWalletBalance: (walletId, delta) => {
+        const wallets = DB.getWallets();
+        const w = wallets.find(w => w.walletId === walletId);
+        if(w) {
+            w.balance += delta;
+            DB.setWallets(wallets);
+        }
+    },
+
+    addExpense: (data) => {
+        const exps = DB.getExpenses();
+        const newExp = { 
+            ...data, 
+            expenseId: 'e' + Date.now() + Math.random().toString(36).substr(2,4),
+            createdAt: new Date().toISOString()
+        };
+        if(newExp.paymentMethod === 'cash' && newExp.walletId) {
+            Core.updateWalletBalance(newExp.walletId, -newExp.amount);
+        }
+        exps.unshift(newExp);
+        DB.setExpenses(exps);
+    },
+
+    deleteExpense: (eid) => {
+        const exps = DB.getExpenses();
+        const exp = exps.find(e => e.expenseId === eid);
+        if(!exp) return;
+        if(exp.paymentMethod === 'cash' && exp.walletId) {
+            Core.updateWalletBalance(exp.walletId, exp.amount);
+        }
+        DB.setExpenses(exps.filter(e => e.expenseId !== eid));
+    }
+};
+
+// ==========================================
+// 3. STATE MANAGEMENT
+// ==========================================
+
+let AppState = {
+    currentPage: 'logloot',
+//記帳頁預設值    
+    logLoot: {
+        desc: "", 
+        amount: "", 
+        currency: "TWD",
+        payer: "u001", 
+        shares: ["u001"], 
+        // groupIndex removed as we use cycleQuickGroup logic directly
+        paymentMethod: "cash", 
+        category: "food",
+        date: new Date().toISOString().slice(0,10),
+        notes: "", 
+        isAdvancedMode: false // New Switching State
+    },
+
+    history: {
+        dateRange: { start: null, end: null },
+        filterIndex: { cat: 0, payer: 0, method: 0, curr: 0 },
+        expandedId: null
+    },
+
+    wallet: {
+        filterUid: null,
+        expandedId: null
+    },
+
+    myUid: "u001",
+    myCatExpand: null
+};
+
+// ==========================================
+// 4. ROUTER & UI
+// ==========================================
+
+const router = {
+    navigate: (page) => {
+        AppState.currentPage = page;
+        renderApp();
+        updateNavHighlight();
+        updateLogLootUI();
+    }
+};
+
+function updateNavHighlight() {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isActive = btn.dataset.page === AppState.currentPage;
+        btn.classList.toggle('text-doraBlue', isActive);
+        btn.classList.toggle('text-gray-400', !isActive);
+        if(isActive) btn.querySelector('i').classList.add('stroke-[3px]');
+        else btn.querySelector('i').classList.remove('stroke-[3px]');
+    });
+}
+
+function renderApp() {
+    const main = document.getElementById('main-content');
+    main.innerHTML = ''; 
+    
+    switch(AppState.currentPage) {
+        case 'logloot': renderLogLoot(main); break;
+        case 'wallet': renderWallet(main); break;
+        case 'my': renderMy(main); break;
+        case 'history': renderHistory(main); break;
+        case 'settings': renderSettings(main); break;
+    }
+    lucide.createIcons();
+    updateLogLootUI();
+}
+
+// ------------------------------------------
+// PAGE: LOG LOOT (記帳) - MODE SWITCHING REFACTOR
+// ------------------------------------------
+
+function renderLogLoot(container) {
+    const s = AppState.logLoot;
+    const payerPerson = Core.getPerson(s.payer);
+  
+    // Determine Quick Group Display Label
+    let groupNameDisplay = "Custom";
+    const shareStr = [...s.shares].sort().join(',');
+    if (shareStr === 'u004') groupNameDisplay = 'Shared';
+    else if (shareStr === 'u001') groupNameDisplay = 'Solo';
+    else if (shareStr === 'u001,u002') groupNameDisplay = 'Duo';
+
+    container.innerHTML = `
+        <div id="MainInputLayer" class="${s.isAdvancedMode ? 'hidden' : 'block'} fixed top-0 left-0 right-0 z-50 bg-bgBase p-4 pb-2 border-b border-gray-100 max-w-[500px] mx-auto">
+            
+            <div class="grid grid-cols-4 gap-2 mb-3 h-16 ">
+                 <input type="text" id="inp-desc" value="${s.desc}" placeholder="Loot       ✨"
+                    oninput="AppState.logLoot.desc=this.value; updateLogLootUI()"
+                    onkeydown="if(event.key==='Enter') document.getElementById('inp-amt').focus()"
+                    class="col-span-3 w-full h-full p-4 rounded-giant text-3xl font-bold text-gray-700 shadow-sm border-none bg-white focus:ring-2 ring-doraBlue/50 placeholder-gray-300">
+                 
+                 <button onclick="cycleLogCurrency()" class="col-span-1 h-full rounded-giant bg-macaronYellow text-gray-700 font-bold shadow-sm flex items-center justify-center active:scale-95 text-lg">
+                    ${s.currency}
+                 </button>
+            </div>
+
+            <div class="grid grid-cols-[2fr_1fr] gap-2 h-16 mb-3">
+                 <input type="number" inputmode="decimal" id="inp-amt" value="${s.amount}" placeholder="Poof    💸" 
+                    oninput="AppState.logLoot.amount=this.value; updateLogLootUI()"
+                    onkeydown="if(event.key==='Enter') submitExpense()"
+                    class="w-full h-full rounded-giant text-3xl font-bold text-gray-700 text-center shadow-inner bg-white border-none focus:ring-2 ring-macaronPink/50">
+                 
+                 <button id="btn-submit" onclick="submitExpense()" class="h-full rounded-giant bg-gray-200 text-gray-400 flex items-center justify-center transition-all active:scale-95">
+                    <i data-lucide="banknote" class="w-7 h-7"></i>
+                 </button>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-2">
+    ${CATEGORIES.map(c => `
+        <button onclick="setLogCategory('${c.id}')" class="aspect-square rounded-[1.5rem] flex flex-col items-center justify-center shadow-sm transition-all active:scale-90 ${s.category === c.id ? c.color + ' ring-2 ring-white scale-105' : 'bg-white'}">
+            
+            <span class="text-3xl mb-1">${c.icon}</span>
+            
+            <span class="text-sm text-gray-500 font-bold">${c.name}</span>
+            
+        </button>
+    `).join('')}
+</div>
+
+
+<div class="relative">
+    <div class="bg-white rounded-giant p-4 shadow-sm border border-gray-100 flex justify-between items-center divide-x divide-gray-100">
+        
+        <button onclick="cycleLogPayer()" class="flex-1 flex flex-col items-center active:opacity-60">
+            <span class=" text-base text-gray-400 font-bold uppercase mb-1 tracking-tight">Payer</span>
+            <div class="flex items-center gap-2">
+                <span class="text-3xl">${payerPerson.avatar}</span>
+                <span class="text-sm font-bold text-gray-700">${payerPerson.name}</span>
+            </div>
+        </button>
+
+        <button onclick="cycleQuickGroup()" class="flex-1 flex flex-col items-center active:opacity-60">
+            <span class=" text-base text-gray-400 font-bold uppercase mb-1 tracking-tight">Shares</span>
+            <span class=" text-lg font-bold ${groupNameDisplay !== 'Custom' ? 'text-doraBlue' : 'text-gray-600'}">${groupNameDisplay}</span>
+        </button>
+
+        <button onclick="cycleLogMethod()" class="flex-1 flex flex-col items-center active:opacity-60">
+            <span class=" text-base text-gray-400 font-bold uppercase mb-1 tracking-tight">Method</span>
+            <span class="text-5xl font-bold ${s.paymentMethod === 'cash' ? 'text-green-500' : 'text-blue-500'}">
+                ${s.paymentMethod === 'cash' ? '💵' : '💳'}
+            </span>
+        </button>
+    </div>
+    
+    <button onclick="switchInputMode(true)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-white rounded-full p-1 shadow-md border border-gray-100 z-10 active:scale-90 transition-transform">
+        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+    </button>
+</div>
+        </div>
+
+        <div id="AdvancedInputLayer" class="${s.isAdvancedMode ? 'block' : 'hidden'} fixed top-0 left-0 right-0 z-[60] bg-white h-screen overflow-hidden max-w-[500px] mx-auto flex flex-col">
+            <div class="p-6 pb-2 flex justify-between items-center pt-[env(safe-area-inset-top)]">
+                <button onclick="switchInputMode(false)" class="text-gray-400 font-bold text-sm">取消</button>
+                <span class="text-base font-bold text-gray-300 uppercase tracking-widest">Advanced</span>
+                <button onclick="switchInputMode(false)" class="bg-black text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-md">完成</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-6 space-y-6 pt-2">
+                <div class="bg-gray-50 p-4 rounded-3xl">
+                    <label class="block text-[10px] text-gray-400 mb-3 font-bold uppercase text-center tracking-tighter">成員分攤 (點選真人剔除公款)</label>
+                    <div class="flex justify-around items-center">
+                        ${ROSTER.filter(r => r.uid !== 'u004').map(r => {
+                            const isSelected = s.shares.includes(r.uid);
+                            return `
+                            <div onclick="toggleLogShareUID('${r.uid}')" class="flex flex-col items-center gap-1 cursor-pointer">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all ${isSelected ? 'bg-white shadow-md border-2 border-black scale-110' : 'opacity-20 grayscale'}">
+                                    ${r.avatar}
+                                </div>
+                                <span class="text-[9px] font-bold ${isSelected ? 'text-black' : 'text-gray-300'}">${r.name}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">交易日期</label>
+                    <input type="date" value="${s.date}" onchange="AppState.logLoot.date=this.value; updateLogLootUI()"
+                        class="w-full p-3 rounded-2xl bg-gray-50 text-lg font-bold border-none outline-none text-gray-600">
+                </div>
+
+<div class="mb-4">
+    <div class="text-[11px] text-gray-400 font-bold uppercase mb-2 ml-4 tracking-widest">Note</div>
+    <textarea 
+        id="adv-note" 
+        rows="6" 
+        placeholder="Add some details..." 
+        oninput="AppState.logLoot.note=this.value"
+        class="w-full p-5 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-200 text-lg font-medium text-gray-700 focus:bg-white focus:border-doraBlue focus:ring-0 transition-all resize-none"
+    >${s.note || ''}</textarea>
+</div>
+                
+
+                
+                <div class="h-24"></div>
+            </div>
+
+            <div class="absolute bottom-6 left-0 right-0 px-4 text-center pointer-events-none">
+                 <div id="advanced-summary-text" class="bg-white/95 backdrop-blur px-5 py-3 rounded-3xl text-sm shadow-xl border border-gray-100 ring-1 ring-black/5 inline-block min-w-[200px]">
+                 </div>
+            </div>
+        </div>
+        
+        `;
+    lucide.createIcons();
+    updateLogLootUI();
+}
+
+// ------------------------------------------
+// UPDATED LOGIC FUNCTIONS
+// ------------------------------------------
+
+// 1. Mode Switching
+window.switchInputMode = (val) => {
+    AppState.logLoot.isAdvancedMode = val;
+    renderApp();
+}
+
+// 2. Cycle Payer
+window.cycleLogPayer = () => {
+    const payers = ['u001', 'u002', 'u004'];
+    const idx = payers.indexOf(AppState.logLoot.payer);
+    AppState.logLoot.payer = payers[(idx + 1) % payers.length];
+    renderApp();
+}
+
+// 3. Cycle Quick Group (Solo -> Duo -> Shared)
+window.cycleQuickGroup = () => {
+    const s = AppState.logLoot;
+    const shareStr = [...s.shares].sort().join(',');
+    
+    if (shareStr === 'u001') {
+        s.shares = ['u001', 'u002']; // Duo
+    } else if (shareStr === 'u001,u002') {
+        s.shares = ['u004'];         // Shared
+        s.payer = 'u004';            // Auto set payer to u004
+    } else {
+        s.shares = ['u001'];         // Solo
+        if (s.payer === 'u004') s.payer = 'u001';
+    }
+    renderApp();
+}
+
+// 4. Method Switching (Credit Card naming handled in UI)
+window.cycleLogMethod = () => {
+    AppState.logLoot.paymentMethod = (AppState.logLoot.paymentMethod === 'cash') ? 'credit' : 'cash';
+    renderApp();
+}
+
+// 5. Mutually Exclusive Shares Logic
+window.toggleLogShareUID = (uid) => {
+    const s = AppState.logLoot;
+    
+    // Auto-remove u004 if a real person is clicked
+    if (uid !== 'u004') {
+        s.shares = s.shares.filter(u => u !== 'u004');
+    }
+    
+    // Toggle logic
+    if (s.shares.includes(uid)) {
+        if (s.shares.length > 1) s.shares = s.shares.filter(u => u !== uid);
+    } else {
+        s.shares.push(uid);
+    }
+    renderApp();
+}
+
+// 6. Submit Logic (Silent, no alert)
+window.submitExpense = () => {
+    const s = AppState.logLoot;
+    if(!s.desc || s.amount <= 0) return;
+
+    let walletId = null;
+    let appliedRate = 1;
+
+    if (s.paymentMethod === 'cash') {
+        const w = Core.findWallet(s.payer, s.currency);
+        if(!w) {
+            // For Shared wallet, we might alert, but generally we want silent flow. 
+            // Let's keep a soft check but not block aggressively with alerts if possible, 
+            // but wallet logic requires valid walletId for balance deduction.
+            if (s.payer === 'u004') return alert(`請先建立公款錢包！`);
+            appliedRate = Core.getRate(s.currency);
+        } else {
+            walletId = w.walletId;
+            appliedRate = w.rate;
+        }
+    } else {
+        appliedRate = Core.getRate(s.currency);
+    }
+
+    Core.addExpense({
+        description: s.desc, amount: parseFloat(s.amount),
+        currency: s.currency, appliedRate: appliedRate,
+        twdEquivalent: parseFloat(s.amount) * appliedRate,
+        payerUID: s.payer, shares: s.shares,
+        paymentMethod: s.paymentMethod, walletId: walletId,
+        category: s.category,
+        dateTime: s.date + ' ' + new Date().toTimeString().slice(0,5),
+        notes: s.notes
+    });
+
+    const btn = document.getElementById('btn-submit');
+    
+    // Reset inputs
+    s.desc = ""; s.amount = ""; s.notes = "";
+    
+    // Flash Animation
+    if(btn) {
+        btn.innerHTML = '<i data-lucide="check-circle" class="w-7 h-7"></i>';
+        btn.classList.add('animate-flash-green');
+    }
+
+    setTimeout(() => {
+        renderApp();
+        // Focus back to desc
+        const newDesc = document.getElementById('inp-desc');
+        if(newDesc) newDesc.focus(); 
+    }, 400);
+}
+
+// 7. Update UI (Double-line Summary)
+window.updateLogLootUI = () => {
+    const s = AppState.logLoot;
+    
+    // Target both global and advanced footers
+    const footers = [
+        { container: document.getElementById('summary-footer'), text: document.getElementById('summary-text') },
+        { container: document.getElementById('advanced-summary-text'), text: document.getElementById('advanced-summary-text') }
+    ];
+
+    const dateStr = s.date.slice(5).replace('-','/');
+    const payerName = (s.payer === 'u004') ? '公款' : Core.getPerson(s.payer).name;
+    const methodText = (s.paymentMethod === 'cash') ? '現金' : '信用卡';
+    const rate = (s.paymentMethod === 'cash') 
+                 ? (Core.findWallet(s.payer, s.currency)?.rate || Core.getRate(s.currency)) 
+                 : Core.getRate(s.currency);
+
+    // Wording Logic
+    let line1 = "";
+    if (s.payer === 'u004' && s.shares.includes('u004')) {
+        line1 = `${dateStr}，公款付，大家分攤`;
+    } else {
+        const shareAvatars = s.shares.map(u => Core.getPerson(u).avatar).join('');
+        line1 = `${dateStr}，${payerName} 付，${shareAvatars} 分攤`;
+    }
+    const line2 = `${methodText}，${s.currency} @${rate}`;
+    const htmlContent = `
+        <div class="text-base text-black font-bold">${line1}</div>
+        <div class="text-sm text-black opacity-60 mt-0.5">${line2}</div>
+    `;
+
+    // Apply to visible footers
+    if (AppState.currentPage !== 'logloot') {
+        footers[0].container.classList.add('opacity-0');
+    } else {
+        footers[0].container.classList.remove('opacity-0');
+        // Update both texts
+        footers.forEach(f => {
+            if(f.text) f.text.innerHTML = htmlContent;
+        });
+    }
+    
+    // Submit btn state update logic remains ...
+    const submitBtn = document.getElementById('btn-submit');
+    const isValid = s.desc.trim() !== "" && parseFloat(s.amount) > 0;
+    if(submitBtn && !submitBtn.classList.contains('animate-flash-green')) {
+         if(isValid) {
+            submitBtn.className = "h-full rounded-giant bg-macaronPink text-white shadow-lg flex items-center justify-center transition-all active:scale-95";
+        } else {
+            submitBtn.className = "h-full rounded-giant bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed flex items-center justify-center";
+        }
+    }
+}
+
+// ------------------------------------------
+// PAGE: WALLET
+// ------------------------------------------
+function renderWallet(container) {
+    let wallets = DB.getWallets();
+    if (AppState.wallet.filterUid) {
+        wallets = wallets.filter(w => w.ownerUID === AppState.wallet.filterUid);
+    }
+    wallets.sort((a,b) => b.balance - a.balance);
+
+    const allExpenses = DB.getExpenses();
+
+    container.innerHTML = `
+        <div class="mb-6 px-2 pt-[calc(env(safe-area-inset-top)-25px)]">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-700">錢包 <span class="text-sm font-normal text-gray-400">Assets</span></h1>
+                <button onclick="addWalletPrompt()" class="bg-doraBlue text-white px-4 py-2 rounded-full shadow hover:opacity-90 transition">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+                <button onclick="setWalletFilter(null)" 
+                    class="flex-none px-4 py-2 rounded-full text-xs font-bold transition-all ${!AppState.wallet.filterUid ? 'bg-gray-700 text-white' : 'bg-white text-gray-500'}">
+                    ALL
+                </button>
+                ${ROSTER.map(r => `
+                    <button onclick="setWalletFilter('${r.uid}')" 
+                        class="flex-none w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${AppState.wallet.filterUid === r.uid ? 'bg-doraBlue text-white shadow-md scale-110' : 'bg-white text-gray-400'}">
+                        ${r.avatar}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+
+        <div class="grid gap-4 pb-20">
+            ${wallets.map(w => {
+                const p = Core.getPerson(w.ownerUID);
+                const isExp = AppState.wallet.expandedId === w.walletId;
+                
+                let recentTx = [];
+                if (isExp) {
+                    recentTx = allExpenses
+                        .filter(e => e.walletId === w.walletId && e.paymentMethod === 'cash')
+                        .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime))
+                        .slice(0, 20);
+                }
+
+                return `
+                <div class="glass-card p-5 relative overflow-hidden transition-all duration-300 transform ${isExp ? 'border-doraBlue ring-2 ring-doraBlue/20' : ''}">
+                    <div onclick="toggleWalletExp('${w.walletId}')" class="flex justify-between items-start cursor-pointer">
+
+        
+                        <div class="flex items-center gap-4">
+                             <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-3xl shadow-md border-2 border-solid border-black transition-all duration-300 ${isExp ? 'scale-110' : ''}">                                ${p.avatar}
+                            </div>
+                            <div>
+                                <div class=" text-base text-gray-800 font- lucide tracking-widest uppercase mb-1">${w.currency}💰</div>
+                                <div class="text-2xl font-bold text-gray-700 font-mono tracking-tight">${w.balance.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <button onclick="event.stopPropagation(); delWallet('${w.walletId}')" class="text-gray-300 hover:text-red-400 p-1">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                            <span class="text-base text-gray-600 font-bold">Rate: ${w.rate}</span>
+                        </div>
+                    </div>
+
+                    ${isExp ? `
+                    <div class="mt-4 pt-4 border-t border-gray-200/50 animate-bounce-slight origin-top">
+                         <div class="flex justify-between text-xs text-gray-400 mb-3 px-1">
+                            <span>初始: ${w.originalAmount.toLocaleString()}</span>
+                            <span>近 20 筆支出</span>
+                         </div>
+                         <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scroll">
+                            ${recentTx.length === 0 ? '<div class="text-center text-gray-300 text-base py-2">無扣款紀錄</div>' : 
+                                recentTx.map(tx => {
+                                    const cat = CATEGORIES.find(c=>c.id===tx.category);
+                                    return `
+                                    <div class="bg-white/40 p-3 rounded-xl flex justify-between items-center">
+                                        <div class="flex flex-col gap-1">
+                                            <div class="text-detail-base font-bold text-gray-700 flex items-center gap-2">
+                                                <span>${cat ? cat.icon : ''}</span> ${tx.description}
+                                            </div>
+                                            <div class="text-sm text-gray-500">${tx.dateTime.slice(5,16).replace('T',' ')}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-detail-base font-bold text-red-500">-${tx.amount}</div>
+                                            <div class="text-sm text-gray-500 flex items-center justify-end gap-1">
+                                                ${tx.shares.map(uid => Core.getPerson(uid).avatar).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')
+                            }
+                         </div>
+                    </div>
+                    ` : ''}
+                </div>
+                `;
+            }).join('')}
+            ${wallets.length===0 ? '<div class="text-center text-gray-400 py-10">尚無錢包</div>' : ''}
+        </div>
+    `;
+}
+
+window.setWalletFilter = (uid) => { AppState.wallet.filterUid = uid; renderApp(); }
+window.toggleWalletExp = (wid) => { AppState.wallet.expandedId = (AppState.wallet.expandedId===wid) ? null : wid; renderApp(); }
+window.addWalletPrompt = () => {
+    const owner = prompt("UID (u001, u002...):", "u001");
+    if(!ROSTER.find(r=>r.uid===owner)) return alert("UID 無效");
+    const curr = prompt("幣別 (TWD, EUR, USD, JPY...):", "USD");
+    const amt = parseFloat(prompt("初始金額:", "50000"));
+    const rate = parseFloat(prompt("換匯匯率:", "33"));
+    if(curr && !isNaN(amt) && !isNaN(rate)) {
+        const ws = DB.getWallets();
+        ws.push({
+            walletId: 'w'+Date.now(),
+            ownerUID: owner, currency: curr.toUpperCase(),
+            originalAmount: amt, balance: amt, rate: rate,
+            createdAt: new Date().toISOString()
+        });
+        DB.setWallets(ws);
+        renderApp();
+    }
+}
+window.delWallet = (wid) => {
+    const hasExp = DB.getExpenses().some(e => e.walletId === wid);
+    const msg = hasExp ? "此錢包已有歷史扣款紀錄，刪除將導致歷史紀錄無法追溯來源。確定刪除？" : "確定刪除此錢包？";
+    if(confirm(msg)) {
+        DB.setWallets(DB.getWallets().filter(w=>w.walletId!==wid));
+        renderApp();
+    }
+}
+
+// ------------------------------------------
+// PAGE: SETTINGS
+// ------------------------------------------
+function renderSettings(container) {
+    const rates = DB.getRates();
+    container.innerHTML = `
+        <h1 class="text-2xl font-bold text-gray-700 px-2 mb-6">設定 <span class="text-sm font-normal text-gray-400">Settings</span></h1>
+        
+        <div class="glass-card p-5 mb-6">
+            <h3 class="text-sm font-bold text-gray-500 mb-4 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4"></i> 參考匯率 (1 外幣 = ? TWD)</h3>
+            <div class="grid grid-cols-2 gap-3">
+                ${Object.entries(rates).map(([curr, val]) => `
+                    <div class="bg-white/50 p-2 rounded-xl flex flex-col items-center">
+                        <span class="text-xs font-bold text-gray-400">${curr}</span>
+                        <input type="number" step="0.001" value="${val}" 
+                            onchange="updateRate('${curr}', this.value)"
+                            class="text-center font-mono font-bold text-doraBlue bg-transparent w-full text-lg border-b border-gray-300 focus:border-doraBlue">
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+
+        <div class="space-y-3 px-1">
+            <div class="flex gap-3">
+                <div class="flex-1 relative">
+                    <button class="w-full py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                        <i data-lucide="upload" class="w-5 h-5 text-macaronPink"></i> 
+                        <span class="text-xs">匯入 Expenses</span>
+                    </button>
+                    <input type="file" onchange="importExpensesCSV(this)" class="absolute inset-0 opacity-0 cursor-pointer">
+                </div>
+                <button onclick="exportExpensesCSV()" class="flex-1 py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                    <i data-lucide="download" class="w-5 h-5 text-doraBlue"></i> 
+                    <span class="text-xs">匯出 Expenses</span>
+                </button>
+            </div>
+
+            <div class="flex gap-3">
+                <div class="flex-1 relative">
+                    <button class="w-full py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                        <i data-lucide="wallet" class="w-5 h-5 text-macaronPurple"></i> 
+                        <span class="text-xs">匯入 Wallet</span>
+                    </button>
+                    <input type="file" onchange="importWalletCSV(this)" class="absolute inset-0 opacity-0 cursor-pointer">
+                </div>
+                <button onclick="exportWalletCSV()" class="flex-1 py-4 glass-card font-bold text-gray-600 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                    <i data-lucide="download" class="w-5 h-5 text-macaronGreen"></i> 
+                    <span class="text-xs">匯出 Wallet</span>
+                </button>
+            </div>
+
+            <button onclick="resetAllData()" class="w-full py-4 mt-6 bg-red-50 rounded-[2.5rem] border border-red-100 text-red-400 font-bold text-xs flex justify-center items-center gap-2 active:bg-red-100">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> RESET ALL DATA
+            </button>
+        </div>
+    `;
+}
+
+window.updateRate = (c, v) => { const r = DB.getRates(); r[c] = parseFloat(v); DB.setRates(r); }
+
+// CSV Handlers
+window.exportExpensesCSV = () => {
+    const exps = DB.getExpenses();
+    let csv = "\uFEFFexpenseId,date,category,description,amount,currency,appliedRate,twdEquivalent,payerUID,shares,paymentMethod,walletId,notes\n";
+    exps.forEach(e => {
+        csv += `${e.expenseId},${e.dateTime},${e.category},"${e.description}",${e.amount},${e.currency},${e.appliedRate},${e.twdEquivalent},${e.payerUID},"${e.shares.join('|')}",${e.paymentMethod},${e.walletId||''},"${e.notes}"\n`;
+    });
+    downloadCSV(csv, 'expenses');
+}
+window.exportWalletCSV = () => {
+    const ws = DB.getWallets();
+    let csv = "\uFEFFwalletId,ownerUID,currency,originalAmount,balance,rate,createdAt\n";
+    ws.forEach(w => {
+        csv += `${w.walletId},${w.ownerUID},${w.currency},${w.originalAmount},${w.balance},${w.rate},${w.createdAt}\n`;
+    });
+    downloadCSV(csv, 'wallets');
+}
+function downloadCSV(content, prefix) {
+    const blob = new Blob([content], {type: 'text/csv;charset=utf-8;'});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `doraemon_${prefix}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+window.importExpensesCSV = (input) => {
+    parseCSV(input.files[0], (lines) => {
+        const exps = [];
+        for(let i=1; i<lines.length; i++) {
+            if(!lines[i].trim()) continue;
+            const col = parseCSVLine(lines[i]);
+            if(col.length < 5) continue;
+            exps.push({
+                expenseId: col[0], dateTime: col[1], category: col[2], description: col[3],
+                amount: parseFloat(col[4]), currency: col[5], appliedRate: parseFloat(col[6]),
+                twdEquivalent: parseFloat(col[7]), payerUID: col[8], shares: col[9].split('|'),
+                paymentMethod: col[10], walletId: col[11]===''?null:col[11], notes: col[12]||''
+            });
+        }
+        DB.setExpenses(exps);
+        alert(`匯入 ${exps.length} 筆支出資料`);
+        renderApp();
+    });
+}
+window.importWalletCSV = (input) => {
+    parseCSV(input.files[0], (lines) => {
+        const existing = DB.getWallets();
+        let count = 0;
+        for(let i=1; i<lines.length; i++) {
+            if(!lines[i].trim()) continue;
+            const col = parseCSVLine(lines[i]);
+            if(col.length < 6) continue;
+            
+            const newW = {
+                walletId: col[0], ownerUID: col[1], currency: col[2],
+                originalAmount: parseFloat(col[3]), balance: parseFloat(col[4]),
+                rate: parseFloat(col[5]), createdAt: col[6]
+            };
+            const idx = existing.findIndex(w => w.walletId === newW.walletId);
+            if(idx >= 0) existing[idx] = newW;
+            else existing.push(newW);
+            count++;
+        }
+        DB.setWallets(existing);
+        alert(`匯入/更新 ${count} 個錢包`);
+        renderApp();
+    });
+}
+function parseCSV(file, callback) {
+    const r = new FileReader();
+    r.onload = (e) => callback(e.target.result.split('\n'));
+    r.readAsText(file);
+}
+function parseCSVLine(text) {
+    const re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
+    const re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+    const a = [];
+    text.replace(re_value, (m0, m1, m2, m3) => {
+        if (m1 !== undefined) a.push(m1.replace(/\\'/g, "'"));
+        else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"'));
+        else if (m3 !== undefined) a.push(m3);
+        return ''; 
+    });
+    if (/,\s*$/.test(text)) a.push('');
+    return a;
+}
+window.resetAllData = () => {
+    if(confirm("警告：這將刪除所有記帳與錢包資料。確定重置？")) {
+        DB.setExpenses([]);
+        DB.setWallets([]);
+        location.reload();
+    }
+}
+
+// ------------------------------------------
+// PAGE: HISTORY
+// ------------------------------------------
+function renderHistory(container) {
+    const s = AppState.history;
+    const f = s.filterIndex;
+    let exps = DB.getExpenses();
+
+    const catOpts = ['All', ...CATEGORIES.map(c=>c.id)];
+    const payerOpts = ['All', ...ROSTER.map(r=>r.uid)];
+    const methodOpts = ['All', 'cash', 'credit'];
+    const currOpts = ['All', ...Object.keys(DEFAULT_RATES)];
+
+    if(s.dateRange.start) exps = exps.filter(e => e.dateTime.slice(0,10) >= s.dateRange.start && e.dateTime.slice(0,10) <= s.dateRange.end);
+    if(f.cat > 0) exps = exps.filter(e => e.category === catOpts[f.cat]);
+    if(f.payer > 0) exps = exps.filter(e => e.payerUID === payerOpts[f.payer]);
+    if(f.method > 0) exps = exps.filter(e => e.paymentMethod === methodOpts[f.method]);
+    if(f.curr > 0) exps = exps.filter(e => e.currency === currOpts[f.curr]);
+
+    const totalTwd = exps.reduce((sum, e) => sum + e.twdEquivalent, 0);
+    const getCatLabel = () => f.cat===0 ? '分類' : CATEGORIES.find(c=>c.id===catOpts[f.cat]).icon;
+    const getPayerLabel = () => f.payer===0 ? '支付' : Core.getPerson(payerOpts[f.payer]).avatar;
+    const getMethodLabel = () => f.method===0 ? '方式' : (methodOpts[f.method]==='cash'?'現金':'信用卡');
+    const getCurrLabel = () => f.curr===0 ? '幣別' : currOpts[f.curr];
+
+    container.innerHTML = `
+        <div class="sticky top-0 bg-bgBase/95 backdrop-blur z-30 pb-2 transition-all">
+            <h1 class="text-2xl font-bold text-gray-700 px-2 mb-3">歷史 <span class="text-sm font-normal text-gray-400">History</span></h1>
+            
+            <div class="mb-2 relative">
+                <button class="w-full glass-card py-3 px-4 flex items-center justify-center gap-2 text-sm text-gray-600 font-bold active:scale-95 transition-transform">
+                    <i data-lucide="calendar" class="w-4 h-4 text-doraBlue"></i>
+                    ${s.dateRange.start ? `${s.dateRange.start} ~ ${s.dateRange.end}` : '所有日期範圍'}
+                </button>
+                <input type="date" class="absolute inset-0 opacity-0 w-1/2" onchange="AppState.history.dateRange.start=this.value; if(!AppState.history.dateRange.end) AppState.history.dateRange.end=this.value; renderApp()">
+                <input type="date" class="absolute inset-0 left-1/2 opacity-0 w-1/2" onchange="AppState.history.dateRange.end=this.value; renderApp()">
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar px-1 pb-2">
+                <button onclick="resetHistory()" class="flex-none p-2.5 rounded-full bg-gray-200 text-gray-600 active:scale-90 transition-transform"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+                <button onclick="cycleHistFilter('cat', ${catOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.cat>0?'bg-macaronPink text-white':'bg-white text-gray-500'}">${getCatLabel()}</button>
+                <button onclick="cycleHistFilter('payer', ${payerOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.payer>0?'bg-doraBlue text-white':'bg-white text-gray-500'}">${getPayerLabel()}</button>
+                <button onclick="cycleHistFilter('method', ${methodOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.method>0?'bg-green-400 text-white':'bg-white text-gray-500'}">${getMethodLabel()}</button>
+                <button onclick="cycleHistFilter('curr', ${currOpts.length})" class="flex-none px-4 py-2 rounded-full text-xs font-bold border ${f.curr>0?'bg-macaronYellow text-gray-700':'bg-white text-gray-500'}">${getCurrLabel()}</button>
+            </div>
+            
+            <div class="mt-1 flex justify-between items-center px-4 py-1.5 bg-white/50 rounded-full mx-1 border border-white">
+                <span class="text-[10px] text-gray-400 font-bold tracking-wider">FOUND: ${exps.length}</span>
+                <span class="text-sm font-bold text-gray-700">NT$${Math.round(totalTwd).toLocaleString()}</span>
+            </div>
+        </div>
+
+        <div class="space-y-3 pb-24">
+            ${exps.map(e => {
+                const cat = CATEGORIES.find(c=>c.id===e.category)||{icon:'?',color:'bg-gray-200'};
+                const isExp = s.expandedId === e.expenseId;
+                const payer = Core.getPerson(e.payerUID);
+                return `
+                <div onclick="toggleHistExp('${e.expenseId}')" class="glass-card p-4 border-l-[6px] ${cat.color.replace('bg-', 'border-')} active:scale-[0.99] transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-3 items-center">
+                            <div class="text-3xl">${cat.icon}</div>
+                            <div>
+                                <div class="text-[10px] text-gray-400 font-mono">${e.dateTime.slice(5,10)}</div>
+                                <div class="font-bold text-gray-700 text-lg line-clamp-1">${e.description}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-gray-800 text-xl">NT$${Math.round(e.twdEquivalent).toLocaleString()}</div>
+                            <div class="text-xs text-gray-400 font-mono">${e.currency} ${e.amount}</div>
+                        </div>
+                    </div>
+                    ${isExp ? `
+                    <div class="mt-3 pt-3 border-t border-gray-200 space-y-2 text-base text-gray-600">
+                        <div class="flex justify-between"><span>匯率:</span><span>${e.appliedRate}</span></div>
+                        <div class="flex justify-between"><span>付款:</span><span>${payer.name} (${e.paymentMethod})</span></div>
+                        <div class="flex justify-between"><span>分攤:</span><span>${e.shares.map(u=>Core.getPerson(u).avatar).join('')}</span></div>
+                        ${e.notes ? `<div class="bg-yellow-50 p-2 rounded text-gray-700 mt-2 text-base">${e.notes}</div>` : ''}
+                        <button onclick="event.stopPropagation(); deleteExp('${e.expenseId}')" class="w-full mt-3 py-3 text-red-400 border border-red-200 rounded-full text-base font-bold">刪除</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('')}
+            ${exps.length===0 ? '<div class="text-center text-gray-300 mt-10">...</div>' : ''}
+        </div>
+    `;
+}
+window.resetHistory = () => { AppState.history.dateRange={start:null,end:null}; AppState.history.filterIndex={cat:0,payer:0,method:0,curr:0}; renderApp(); }
+window.cycleHistFilter = (key,len) => { AppState.history.filterIndex[key]=(AppState.history.filterIndex[key]+1)%len; renderApp(); }
+window.toggleHistExp = (eid) => { AppState.history.expandedId=(AppState.history.expandedId===eid)?null:eid; renderApp(); }
+window.deleteExp = (eid) => { if(confirm('刪除將無法復原，現金餘額將回補。')) { Core.deleteExpense(eid); renderApp(); } }
+
+// ------------------------------------------
+// PAGE: MY
+// ------------------------------------------
+function renderMy(container) {
+    const uid = AppState.myUid;
+    const exps = DB.getExpenses();
+    const p = Core.getPerson(uid);
+    let outflow = 0, consumption = 0, catMap = {};
+
+    exps.forEach(e => {
+        if(e.payerUID === uid) outflow += e.twdEquivalent;
+        if(e.shares.includes(uid)) {
+            const myPart = e.twdEquivalent / e.shares.length;
+            consumption += myPart;
+            if(!catMap[e.category]) catMap[e.category] = 0;
+            catMap[e.category] += myPart;
+        }
+    });
+    const sortedCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+
+    container.innerHTML = `
+        <div class="flex items-center justify-between mb-6 px-2 pt-[env(safe-area-inset-top)] -mt-5
+">
+            <h1 class="text-2xl font-bold text-gray-700">我的 <span class="text-sm font-normal text-gray-400">Analysis</span></h1>
+            <select onchange="AppState.myUid=this.value;renderApp()" class="bg-white p-2 rounded-xl text-lg border-none shadow-sm outline-none">
+                ${ROSTER.map(r=>`<option value="${r.uid}" ${r.uid===uid?'selected':''}>${r.avatar} ${r.name}</option>`).join('')}
+            </select>
+        </div>
+        <div class="glass-card p-6 mb-6 bg-gradient-to-br from-white to-doraBlue/10">
+            <div class="text-center mb-6">
+                 <div class="text-5xl mb-2">${p.avatar}</div>
+                 <div class="text-xl font-bold text-gray-700">${p.name}</div>
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1 bg-white/60 p-3 rounded-[1.5rem] text-center shadow-sm">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest">REAL COST</div>
+                    <div class="text-xl font-bold text-doraBlue">NT$${Math.round(consumption).toLocaleString()}</div>
+                </div>
+                <div class="flex-1 bg-white/60 p-3 rounded-[1.5rem] text-center shadow-sm">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest">PAID OUT</div>
+                    <div class="text-xl font-bold text-macaronPink">NT$${Math.round(outflow).toLocaleString()}</div>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-5 px-2 pb-20">
+            ${sortedCats.map(([cid, amt]) => {
+                const c = CATEGORIES.find(x=>x.id===cid);
+                const pct = Math.round((amt/consumption)*100);
+                const isExp = AppState.myCatExpand === cid;
+                const details = exps.filter(e => e.category === cid && e.shares.includes(uid)).slice(0, 20)
+                    .map(e => `<div class="flex justify-between text-base text-gray-600 py-2 border-b border-gray-100 last:border-0"><span>${e.dateTime.slice(5,10)} ${e.description}</span><span>$${Math.round(e.twdEquivalent/e.shares.length)}</span></div>`).join('');
+                return `
+                <div onclick="AppState.myCatExpand = '${isExp?null:cid}'; renderApp()" class="cursor-pointer">
+                    <div class="flex justify-between items-end mb-1">
+                        <div class="flex items-center gap-2"><span class="text-2xl">${c.icon}</span><span class="text-lg font-bold text-gray-600">${c.name}</span></div>
+                        <div class="text-base font-mono text-gray-500 font-bold">$${Math.round(amt).toLocaleString()}</div>
+                    </div>
+                    <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden"><div class="h-full ${c.color} rounded-full" style="width: ${pct}%"></div></div>
+                    ${isExp ? `<div class="mt-3 bg-white/50 p-3 rounded-2xl animate-bounce-slight">${details}</div>` : ''}
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+}
+
+// 補回：切換貨幣邏輯
+window.cycleLogCurrency = () => {
+    const currs = Object.keys(DEFAULT_RATES);
+    const idx = currs.indexOf(AppState.logLoot.currency);
+    AppState.logLoot.currency = currs[(idx + 1) % currs.length];
+    renderApp(); // 必須 renderApp 才能看到按鈕文字改變
+}
+
+// 補回：設定分類邏輯
+window.setLogCategory = (cid) => {
+    AppState.logLoot.category = cid;
+    renderApp(); // 必須 renderApp 才能看到選中狀態的顏色變化
+}
+window.onload = function() { renderApp(); };
+
+</script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker 準備就緒！'))
+                .catch(err => console.error('註冊失敗：', err));
+        });
+    }
+</script>
+</body>
+</html>
