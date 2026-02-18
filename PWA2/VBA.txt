@@ -1,0 +1,781 @@
+Option Explicit
+
+' ==============================================================================
+' ?? 2026 哆啦對帳系統 - 最終完美彩色版 (Proven Pink-Button Logic)
+' 架構師：Smile Yang
+' 核心技術：使用 Characters(1, 2) 強制鎖定 Emoji 字型，其餘維持 Iansui
+' ==============================================================================
+
+Private GlobalExpenses() As Variant
+Private GlobalWallets() As Variant
+Private HasData As Boolean
+Private DictRoster As Object
+
+' ?? 設定區
+Private Const FONT_NAME_TEXT As String = "Iansui"         ' 文字用 Iansui
+Private Const FONT_NAME_ICON As String = "Segoe UI Emoji" ' ICON 用這個才會變彩色
+Private Const FONT_SIZE_BODY As Integer = 16
+Private Const FONT_SIZE_TITLE As Integer = 22
+Private Const THEME_TABLE_STYLE As String = "TableStyleMedium2"
+
+' ?? 顏色常數
+Private Const COLOR_BTN_IMPORT As Long = 5880731
+Private Const COLOR_BTN_SET As Long = 7368816
+Private Const COLOR_BTN_GROUP As Long = 16422550
+Private Const COLOR_BTN_PS As Long = 10498160
+Private Const COLOR_BTN_SUM As Long = 49407
+Private Const COLOR_RED_LIGHT As Long = 12695295
+Private Const COLOR_GREEN_LIGHT As Long = 9498256
+Private Const COLOR_BLUE_HEADER As Long = 16632516
+
+' ==========================================
+' ?? 基礎工具
+' ==========================================
+Private Function GetEmoji(ByVal hexCode As Long) As String
+    On Error Resume Next
+    GetEmoji = Application.WorksheetFunction.Unichar(hexCode)
+    If ERR.Number <> 0 Then GetEmoji = ""
+    On Error GoTo 0
+End Function
+
+Private Sub LoadRoster()
+    Set DictRoster = CreateObject("Scripting.Dictionary")
+    Dim ws As Worksheet
+    On Error Resume Next: Set ws = Sheets("Settings"): On Error GoTo 0
+    If Not ws Is Nothing Then
+        Dim i As Long
+        For i = 3 To ws.Cells(ws.Rows.count, "B").End(xlUp).row
+            If Trim(ws.Cells(i, 2).Value) <> "" Then
+                DictRoster(CStr(ws.Cells(i, 2).Value)) = CStr(ws.Cells(i, 3).Value)
+            End If
+        Next i
+    End If
+End Sub
+
+Private Function GetPersonName(ByVal uid As String) As String
+    uid = Trim(uid)
+    If DictRoster Is Nothing Then LoadRoster
+    If DictRoster.Exists(uid) Then GetPersonName = DictRoster(uid): Exit Function
+    Select Case LCase(uid)
+        Case "u001": GetPersonName = GetEmoji(&H1F42C) & " Smile"
+        Case "u002": GetPersonName = GetEmoji(&H1F33B) & " Jiani"
+        Case "u003": GetPersonName = GetEmoji(&H26BD) & " Nomad"
+        Case "u004": GetPersonName = GetEmoji(&H1F354) & " Shared"
+        Case Else: GetPersonName = uid
+    End Select
+End Function
+
+Private Function GetActiveUsers() As Object
+    Dim dict As Object, i As Long, s As Variant, shareArr() As String
+    Set dict = CreateObject("Scripting.Dictionary")
+    If IsArray(GlobalWallets) Then
+        For i = 1 To UBound(GlobalWallets, 1)
+            If GlobalWallets(i, 2) <> "" And GlobalWallets(i, 2) <> "u004" Then dict(CStr(GlobalWallets(i, 2))) = 1
+        Next i
+    End If
+    If IsArray(GlobalExpenses) Then
+        For i = 1 To UBound(GlobalExpenses, 1)
+            If GlobalExpenses(i, 9) <> "" And GlobalExpenses(i, 9) <> "u004" Then dict(CStr(GlobalExpenses(i, 9))) = 1
+            shareArr = Split(CStr(GlobalExpenses(i, 10)), "|")
+            For Each s In shareArr
+                If CStr(s) <> "" And CStr(s) <> "u004" Then dict(CStr(s)) = 1
+            Next s
+        Next i
+    End If
+    Set GetActiveUsers = dict
+End Function
+
+Private Function GetPublicFundRefundPerPerson() As Double
+    Dim dictUsers As Object: Set dictUsers = GetActiveUsers()
+    If dictUsers.count = 0 Then GetPublicFundRefundPerPerson = 0: Exit Function
+    Dim i As Long, initTWD As Double, spentTWD As Double
+    initTWD = 0: spentTWD = 0
+    If IsArray(GlobalWallets) Then
+        For i = 1 To UBound(GlobalWallets, 1)
+            If GlobalWallets(i, 2) = "u004" Then
+                initTWD = initTWD + (val(GlobalWallets(i, 4)) * val(GlobalWallets(i, 6)))
+            End If
+        Next i
+    End If
+    If IsArray(GlobalExpenses) Then
+        For i = 1 To UBound(GlobalExpenses, 1)
+            If GlobalExpenses(i, 9) = "u004" Then
+                spentTWD = spentTWD + (val(GlobalExpenses(i, 5)) * val(GlobalExpenses(i, 7)))
+            End If
+        Next i
+    End If
+    GetPublicFundRefundPerPerson = (initTWD - spentTWD) / dictUsers.count
+End Function
+
+' ==========================================
+' ?? 主控台初始化 (套用粉紅色按鈕邏輯)
+' ==========================================
+Public Sub Setup_Doraemon_System()
+    Dim ws As Worksheet
+    Application.ScreenUpdating = False: Application.DisplayAlerts = False
+    
+    On Error Resume Next: Sheets("指揮中心").Delete: On Error GoTo 0
+    Set ws = Sheets.Add(Before:=Sheets(1)): ws.Name = "指揮中心"
+    ws.Cells.Font.Name = FONT_NAME_TEXT
+    ws.Range("A1:Z100").Interior.Color = RGB(252, 252, 252)
+    
+    ws.Range("C3").Value = GetEmoji(&H1F42C) & " 2026 哆啦對帳系統"
+    ws.Range("C3").Font.Size = FONT_SIZE_TITLE + 4
+    ws.Range("C3").Font.Bold = True: ws.Range("C3").Font.Color = RGB(50, 50, 50)
+    ' 標題也要混搭字型
+    ws.Range("C3").Characters(1, 2).Font.Name = FONT_NAME_ICON
+    
+    ' 建立按鈕
+    CreateShapeBtn ws, "1. 自動匯入 (Import)", "Btn1_ImportData", 70, 50, COLOR_BTN_IMPORT
+    CreateShapeBtn ws, "2. 系統設定 (Settings)", "Btn2_Settings", 140, 50, COLOR_BTN_SET
+    CreateShapeBtn ws, "3. 團體明細 (Group)", "Btn3_GroupDetails", 210, 50, COLOR_BTN_GROUP
+    CreateShapeBtn ws, "4. 個人分頁 (Personal)", "Btn4_PersonalSheets", 280, 50, COLOR_BTN_PS
+    CreateShapeBtn ws, "5. 終局結算 (Summary)", "Btn5_GroupSummary", 350, 50, COLOR_BTN_SUM
+    
+    ws.Columns("C:F").AutoFit: Application.ScreenUpdating = True
+    MsgBox "系統部署完畢！所有按鈕已成功變色。", vbInformation
+End Sub
+
+Private Sub CreateShapeBtn(ByVal ws As Worksheet, ByVal btnText As String, ByVal macroName As String, ByVal topPos As Double, ByVal leftPos As Double, ByVal colorCode As Long)
+    Dim shp As Shape
+    Set shp = ws.Shapes.AddShape(msoShapeRoundedRectangle, leftPos, topPos, 300, 55)
+    With shp
+        ' 1. 先設定文字內容
+        .TextFrame.Characters.Text = btnText
+        
+        ' 2. 設定整體樣式 (Iansui)
+        With .TextFrame.Characters.Font
+            .Name = FONT_NAME_TEXT
+            .Size = 16
+            .Bold = True
+            .Color = vbWhite
+        End With
+        
+        .TextFrame.HorizontalAlignment = xlHAlignCenter
+        .TextFrame.VerticalAlignment = xlVAlignCenter
+        .Fill.ForeColor.RGB = colorCode
+        .line.Visible = msoFalse
+        .OnAction = macroName
+        .Shadow.Type = msoShadow25
+        
+        ' ?? 3. 關鍵時刻：強制前兩個字元使用 Emoji 字型 (這就是你測試成功的關鍵)
+        .TextFrame.Characters(1, 2).Font.Name = FONT_NAME_ICON
+    End With
+End Sub
+
+' ==========================================
+' ?? Button 1: 自動匯入
+' ==========================================
+Public Sub Btn1_ImportData()
+    Dim folderPath As String
+    Dim fileExp As String, fileWal As String
+    Dim fullPathExp As String, fullPathWal As String
+    
+    folderPath = ThisWorkbook.Path & "\"
+    fileExp = Dir(folderPath & "*expenses*.csv")
+    fileWal = Dir(folderPath & "*wallets*.csv")
+    
+    If fileExp = "" Or fileWal = "" Then
+        MsgBox "找不到檔案！請確認資料夾內有 expenses 和 wallets 的 CSV 檔。", vbCritical
+        Exit Sub
+    End If
+    
+    fullPathExp = folderPath & fileExp
+    fullPathWal = folderPath & fileWal
+    
+    ImportCSVToSheet fullPathExp, "Raw_Expenses", GlobalExpenses
+    ImportCSVToSheet fullPathWal, "Raw_Wallets", GlobalWallets
+    
+    HasData = True
+    Sheets("Raw_Expenses").Activate
+    MsgBox "數據匯入成功！", vbInformation
+End Sub
+
+Private Sub ImportCSVToSheet(ByVal fPath As String, ByVal sheetName As String, ByRef outArr() As Variant)
+    Dim stream As Object, txt As String, lines() As String, headers() As String, rowData() As String
+    Dim i As Long, j As Long, validRowCount As Long
+    Dim ws As Worksheet
+    
+    Set stream = CreateObject("ADODB.Stream"): stream.Type = 2: stream.Charset = "UTF-8": stream.Open
+    stream.LoadFromFile fPath: txt = stream.ReadText: txt = Replace(txt, vbCr, "")
+    stream.Close: Set stream = Nothing
+    
+    lines = Split(txt, vbLf)
+    If UBound(lines) < 0 Then Exit Sub
+    headers = Split(Replace(lines(0), """", ""), ",")
+    ReDim outArr(1 To UBound(lines), 1 To UBound(headers) + 1)
+    
+    validRowCount = 0
+    For i = 1 To UBound(lines)
+        If Trim(lines(i)) <> "" Then
+            validRowCount = validRowCount + 1: rowData = Split(lines(i), ",")
+            For j = 0 To UBound(rowData)
+                If j <= UBound(headers) Then outArr(validRowCount, j + 1) = Trim(Replace(rowData(j), """", ""))
+            Next j
+        End If
+    Next i
+    
+    On Error Resume Next: Application.DisplayAlerts = False: Sheets(sheetName).Delete: Application.DisplayAlerts = True: On Error GoTo 0
+    Set ws = Sheets.Add(After:=Sheets(Sheets.count)): ws.Name = sheetName
+    ws.Cells.Font.Name = FONT_NAME_TEXT
+    ws.Cells.Font.Size = FONT_SIZE_BODY
+    
+    Dim startRow As Integer: startRow = 3
+    ws.Range("A" & startRow).Resize(1, UBound(headers) + 1).Value = headers
+    If validRowCount > 0 Then ws.Range("A" & startRow + 1).Resize(validRowCount, UBound(headers) + 1).Value = outArr
+    
+    ws.ListObjects.Add(xlSrcRange, ws.UsedRange, , xlYes).TableStyle = THEME_TABLE_STYLE
+    
+    ' 原始資料如果有 Icon 欄位，建議手動設定一下，這裡先只做基本
+    FinalizeSheet ws, True
+End Sub
+
+' ==========================================
+' ?? Button 2: 系統設定
+' ==========================================
+Public Sub Btn2_Settings()
+    If Not HasData Then MsgBox "請先匯入", vbExclamation: Exit Sub
+    Dim ws As Worksheet, isNew As Boolean
+    On Error Resume Next: Set ws = Sheets("Settings"): On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = Sheets.Add(After:=Sheets(Sheets.count)): ws.Name = "Settings": isNew = True
+    End If
+    ws.Cells.Font.Name = FONT_NAME_TEXT: ws.Cells.Font.Size = FONT_SIZE_BODY
+    
+    Dim startRow As Integer: startRow = 3
+    If isNew Then
+        ws.Range("B" & startRow).Value = "ID 對照表 (ROSTER)"
+        ws.Range("B" & startRow & ":C" & startRow).Interior.Color = RGB(3, 105, 161): ws.Range("B" & startRow & ":C" & startRow).Font.Color = vbWhite
+        ws.Range("B" & startRow + 1).Value = "u001": ws.Range("C" & startRow + 1).Value = GetEmoji(&H1F42C) & " Smile"
+        ws.Range("B" & startRow + 2).Value = "u002": ws.Range("C" & startRow + 2).Value = GetEmoji(&H1F33B) & " Jiani"
+        ws.Range("B" & startRow + 3).Value = "u003": ws.Range("C" & startRow + 3).Value = GetEmoji(&H26BD) & " Nomad"
+        ws.Range("B" & startRow + 4).Value = "u004": ws.Range("C" & startRow + 4).Value = GetEmoji(&H1F354) & " Shared"
+        ws.Range("C" & (startRow + 1) & ":C" & (startRow + 4)).Interior.Color = RGB(224, 242, 254)
+    End If
+    
+    ws.Range("E:I").Clear
+    ws.Range("E" & startRow).Value = "錢包動態總覽"
+    ws.Range("E" & startRow & ":I" & startRow).Interior.Color = RGB(3, 105, 161): ws.Range("E" & startRow & ":I" & startRow).Font.Color = vbWhite
+    ws.Range("E" & startRow + 1).Resize(1, 5).Value = Array("錢包ID", "擁有者", "幣別", "初始額度", "匯率")
+    
+    Dim i As Long, r As Long: r = startRow + 2
+    For i = 1 To UBound(GlobalWallets, 1)
+        If GlobalWallets(i, 1) <> "" Then
+            ws.Cells(r, 5).Value = GlobalWallets(i, 1): ws.Cells(r, 6).Value = GetPersonName(CStr(GlobalWallets(i, 2)))
+            ws.Cells(r, 7).Value = GlobalWallets(i, 3): ws.Cells(r, 8).Value = GlobalWallets(i, 4): ws.Cells(r, 9).Value = GlobalWallets(i, 6)
+            r = r + 1
+        End If
+    Next i
+    If r > startRow + 2 Then ws.ListObjects.Add(xlSrcRange, ws.Range("E" & (startRow + 1) & ":I" & (r - 1)), , xlYes).TableStyle = THEME_TABLE_STYLE
+    
+    ' ?? 強制設定欄位字型 (確保表格內 Icon 彩色)
+    If isNew Then ws.Range("C" & (startRow + 1) & ":C" & (startRow + 4)).Font.Name = FONT_NAME_ICON
+    ws.Columns("F").Font.Name = FONT_NAME_ICON
+    
+    FinalizeSheet ws
+End Sub
+
+' ==========================================
+' ?? Button 3: 團體明細
+' ==========================================
+Public Sub Btn3_GroupDetails()
+    If Not HasData Then MsgBox "請先匯入", vbExclamation: Exit Sub
+    LoadRoster
+    Dim ws As Worksheet: InitSheet ws, "Group_Details"
+    Dim startRow As Integer: startRow = 3
+    
+    ws.Range("A" & startRow).Resize(1, 12).Value = Array("日期", "屬性", "類別", "描述", "支付者", "方式", "原幣", "原幣額", "匯率", "台幣總額", "分攤名單", "每人應攤")
+    Dim i As Long, r As Long: r = startRow + 1
+    Dim amt As Double, rate As Double, twdAmt As Double, perPerson As Double
+    Dim payer As String, shares As String, cat As String, attr As String, shareArr() As String
+    Dim totalJPY As Double, totalUSD As Double, totalTWD As Double
+    Dim dictCatGroup As Object: Set dictCatGroup = CreateObject("Scripting.Dictionary")
+    
+    For i = 1 To UBound(GlobalExpenses, 1)
+        If GlobalExpenses(i, 1) <> "" Then
+            payer = CStr(GlobalExpenses(i, 9)): shares = CStr(GlobalExpenses(i, 10)): shareArr = Split(shares, "|")
+            If payer = "u004" Or UBound(shareArr) > 0 Or (UBound(shareArr) = 0 And shareArr(0) <> payer) Then
+                amt = val(GlobalExpenses(i, 5)): rate = val(GlobalExpenses(i, 7))
+                twdAmt = amt * rate: perPerson = twdAmt / (UBound(shareArr) + 1): cat = CStr(GlobalExpenses(i, 3))
+                If payer = "u004" Then attr = "公款支付" Else attr = "幫人代墊"
+                If dictCatGroup.Exists(cat) Then dictCatGroup(cat) = dictCatGroup(cat) + twdAmt Else dictCatGroup.Add cat, twdAmt
+                
+                ws.Cells(r, 1).Value = Split(GlobalExpenses(i, 2), " ")(0): ws.Cells(r, 1).NumberFormat = "yyyy/mm/dd"
+                ws.Cells(r, 2).Value = attr
+                ws.Cells(r, 3).Value = GetCatEmoji(cat) & " " & cat: ws.Cells(r, 3).Interior.Color = GetCatColor(cat)
+                ws.Cells(r, 4).Value = GlobalExpenses(i, 4): ws.Cells(r, 5).Value = GetPersonName(payer)
+                ws.Cells(r, 6).Value = GlobalExpenses(i, 11): ws.Cells(r, 7).Value = GlobalExpenses(i, 6)
+                ws.Cells(r, 8).Value = amt: ws.Cells(r, 9).Value = rate
+                ws.Cells(r, 10).Value = twdAmt: ws.Cells(r, 11).Value = GetSharesNames(shares): ws.Cells(r, 12).Value = perPerson
+                
+                Select Case UCase(GlobalExpenses(i, 6))
+                    Case "JPY": totalJPY = totalJPY + amt
+                    Case "USD": totalUSD = totalUSD + amt
+                    Case "TWD", "EUR": totalTWD = totalTWD + twdAmt
+                End Select
+                r = r + 1
+            End If
+        End If
+    Next i
+    
+    If r > startRow + 1 Then ws.ListObjects.Add(xlSrcRange, ws.Range("A" & startRow & ":L" & (r - 1)), , xlYes).TableStyle = THEME_TABLE_STYLE
+    r = ws.Cells(ws.Rows.count, "A").End(xlUp).row + 2
+    ws.Cells(r, 9).Value = "JPY 總計": ws.Cells(r, 10).Value = totalJPY
+    ws.Cells(r + 1, 9).Value = "USD 總計": ws.Cells(r + 1, 10).Value = totalUSD
+    ws.Cells(r + 2, 9).Value = "TWD 總負擔": ws.Cells(r + 2, 10).Value = totalTWD
+    ws.Range(ws.Cells(r, 9), ws.Cells(r + 2, 10)).Font.Size = FONT_SIZE_TITLE: ws.Range(ws.Cells(r, 9), ws.Cells(r + 2, 10)).Font.Bold = True
+    
+    ' ?? 表格修復：整欄強制使用 Emoji 字型 (C=類別, E=支付者, K=分攤名單)
+    ws.Columns("C").Font.Name = FONT_NAME_ICON
+    ws.Columns("E").Font.Name = FONT_NAME_ICON
+    ws.Columns("K").Font.Name = FONT_NAME_ICON
+    
+    BuildSummaryTableAndChart ws, dictCatGroup, "N3": Set dictCatGroup = Nothing
+    FinalizeSheet ws
+End Sub
+
+' ==========================================
+' ?? Button 4: 個人分頁
+' ==========================================
+Public Sub Btn4_PersonalSheets()
+    If Not HasData Then MsgBox "請匯入數據", vbExclamation: Exit Sub
+    LoadRoster
+    Dim dictUsers As Object, key As Variant: Set dictUsers = GetActiveUsers()
+    Dim u004Refund As Double: u004Refund = GetPublicFundRefundPerPerson()
+    Application.ScreenUpdating = False
+    For Each key In dictUsers.Keys
+        GeneratePersonalSheet CStr(key), u004Refund
+    Next key
+    Application.ScreenUpdating = True
+    MsgBox "個人分頁生成完畢！", vbInformation
+End Sub
+
+Private Sub GeneratePersonalSheet(ByVal targetUID As String, ByVal u004Refund As Double)
+    Dim ws As Worksheet, rawName As String
+    rawName = Replace(Replace(Replace(GetPersonName(targetUID), GetEmoji(&H1F42C), ""), GetEmoji(&H1F33B), ""), GetEmoji(&H26BD), "")
+    InitSheet ws, "PS_" & Trim(rawName)
+    
+    Dim i As Long, r As Long, s As Variant
+    r = 3
+    ws.Range("A" & r).Value = "【 資產概況 (個人錢包) 】": ws.Range("A" & r).Font.Bold = True: ws.Range("A" & r).Font.Color = RGB(3, 105, 161)
+    ws.Range("A" & r).Font.Size = FONT_SIZE_TITLE
+    r = r + 1
+    ws.Range("A" & r & ":F" & r).Value = Array("錢包ID", "幣別", "初始額度", "本表記錄流出", "結算估計剩餘", "匯率")
+    Dim tableStart As Long: tableStart = r
+    r = r + 1
+    
+    Dim dictWalletOutflow As Object: Set dictWalletOutflow = CreateObject("Scripting.Dictionary")
+    Dim dictCat As Object: Set dictCat = CreateObject("Scripting.Dictionary")
+    Dim totalAdvance As Double, totalBurden As Double, totalSharedReturn As Double
+    Dim payer As String, shares As String, shareArr() As String, walletId As String
+    Dim amt As Double, rate As Double, twdAmt As Double, perPerson As Double, myBurden As Double, myCredit As Double
+    Dim cat As String, attr As String, isPayer As Boolean, inShares As Boolean
+    
+    For i = 1 To UBound(GlobalExpenses, 1)
+        If GlobalExpenses(i, 1) <> "" Then
+            payer = CStr(GlobalExpenses(i, 9)): shares = CStr(GlobalExpenses(i, 10)): walletId = CStr(GlobalExpenses(i, 12))
+            shareArr = Split(shares, "|"): isPayer = (payer = targetUID): inShares = False
+            For Each s In shareArr
+                If CStr(s) = targetUID Then
+                    inShares = True
+                    Exit For
+                End If
+            Next s
+            
+            amt = val(GlobalExpenses(i, 5)): rate = val(GlobalExpenses(i, 7)): twdAmt = amt * rate
+            perPerson = 0: If UBound(shareArr) >= 0 Then perPerson = twdAmt / (UBound(shareArr) + 1)
+            
+            If isPayer And walletId <> "" Then
+                If dictWalletOutflow.Exists(walletId) Then dictWalletOutflow(walletId) = dictWalletOutflow(walletId) + amt Else dictWalletOutflow.Add walletId, amt
+            End If
+            If isPayer And UBound(shareArr) > 0 Then totalAdvance = totalAdvance + twdAmt
+            If inShares Then totalBurden = totalBurden + perPerson
+            If payer = "u004" And inShares Then totalSharedReturn = totalSharedReturn + perPerson
+        End If
+    Next i
+    
+    For i = 1 To UBound(GlobalWallets, 1)
+        If GlobalWallets(i, 2) = targetUID Then
+            walletId = CStr(GlobalWallets(i, 1)): Dim initialAmt As Double: initialAmt = val(GlobalWallets(i, 4))
+            Dim outflow As Double: outflow = 0
+            If dictWalletOutflow.Exists(walletId) Then outflow = dictWalletOutflow(walletId)
+            ws.Cells(r, 1).Value = walletId: ws.Cells(r, 2).Value = GlobalWallets(i, 3)
+            ws.Cells(r, 3).Value = initialAmt: ws.Cells(r, 4).Value = outflow
+            ws.Cells(r, 5).Value = initialAmt - outflow: ws.Cells(r, 6).Value = GlobalWallets(i, 6)
+            r = r + 1
+        End If
+    Next i
+    If r > tableStart + 1 Then ws.ListObjects.Add(xlSrcRange, ws.Range("A" & tableStart & ":F" & (r - 1)), , xlYes).TableStyle = THEME_TABLE_STYLE
+    
+    r = r + 2
+    ws.Cells(r, 1).Value = "【 終局債務清算 】": ws.Cells(r, 1).Font.Bold = True: ws.Cells(r, 1).Font.Color = RGB(3, 105, 161)
+    ws.Cells(r, 1).Font.Size = FONT_SIZE_TITLE
+    r = r + 1
+    ws.Cells(r, 1).Resize(1, 5).Value = Array("總代墊(A)", "應攤總負擔(B)", "公帳分回(C)", "公款殘值退回(D)", "淨應收/補狀態")
+    ws.Cells(r + 1, 1).Value = totalAdvance: ws.Cells(r + 1, 2).Value = totalBurden
+    ws.Cells(r + 1, 3).Value = totalSharedReturn: ws.Cells(r + 1, 4).Value = u004Refund
+    Dim netVal As Double: netVal = totalAdvance - totalBurden + totalSharedReturn + u004Refund
+    If netVal > 0 Then
+        ws.Cells(r + 1, 5).Value = GetEmoji(&H1F7E2) & " 應收回 " & Format(netVal, "$#,##0"): ws.Cells(r + 1, 5).Interior.Color = COLOR_GREEN_LIGHT
+    ElseIf netVal < 0 Then
+        ws.Cells(r + 1, 5).Value = GetEmoji(&H1F534) & " 須補交 " & Format(Abs(netVal), "$#,##0"): ws.Cells(r + 1, 5).Interior.Color = COLOR_RED_LIGHT
+    Else
+        ws.Cells(r + 1, 5).Value = GetEmoji(&H26AA) & " 平衡"
+    End If
+    ws.ListObjects.Add(xlSrcRange, ws.Range(ws.Cells(r, 1), ws.Cells(r + 1, 5)), , xlYes).TableStyle = THEME_TABLE_STYLE
+    ' 債務清算表有 Icon，強制彩色
+    ws.Cells(r + 1, 5).Font.Name = FONT_NAME_ICON
+    
+    r = r + 3
+    ws.Cells(r, 1).Value = "【 詳細消費紀錄 】": ws.Cells(r, 1).Font.Bold = True: ws.Cells(r, 1).Font.Color = RGB(3, 105, 161)
+    ws.Cells(r, 1).Font.Size = FONT_SIZE_TITLE
+    r = r + 1
+    Dim detailStartRow As Long: detailStartRow = r
+    ws.Cells(r, 1).Resize(1, 11).Value = Array("日期", "屬性", "類別", "描述", "方式", "原幣", "原幣額", "匯率", "台幣總額", "我的負擔", "代墊債權")
+    r = r + 1
+    
+    For i = 1 To UBound(GlobalExpenses, 1)
+        If GlobalExpenses(i, 1) <> "" Then
+            payer = CStr(GlobalExpenses(i, 9)): shares = CStr(GlobalExpenses(i, 10)): shareArr = Split(shares, "|")
+            isPayer = (payer = targetUID): inShares = False
+            For Each s In shareArr
+                If CStr(s) = targetUID Then
+                    inShares = True
+                    Exit For
+                End If
+            Next s
+            
+            If isPayer Or inShares Then
+                amt = val(GlobalExpenses(i, 5)): rate = val(GlobalExpenses(i, 7)): twdAmt = amt * rate: cat = CStr(GlobalExpenses(i, 3))
+                myBurden = 0: myCredit = 0: If inShares Then myBurden = twdAmt / (UBound(shareArr) + 1)
+                
+                If isPayer And inShares And UBound(shareArr) = 0 Then attr = "個人私費"
+                If isPayer And UBound(shareArr) > 0 Then attr = "幫人代墊": myCredit = twdAmt - myBurden
+                If Not isPayer And inShares Then attr = "他人支付(我分攤)"
+                
+                If myBurden > 0 Then
+                    If dictCat.Exists(cat) Then dictCat(cat) = dictCat(cat) + myBurden Else dictCat.Add cat, myBurden
+                End If
+                
+                ws.Cells(r, 1).Value = Split(GlobalExpenses(i, 2), " ")(0): ws.Cells(r, 1).NumberFormat = "yyyy/mm/dd"
+                ws.Cells(r, 2).Value = attr
+                If attr = "個人私費" Then ws.Cells(r, 2).Interior.Color = RGB(224, 242, 254)
+                If attr = "幫人代墊" Then ws.Cells(r, 2).Interior.Color = RGB(255, 237, 213)
+                ws.Cells(r, 3).Value = GetCatEmoji(cat) & " " & cat: ws.Cells(r, 3).Interior.Color = GetCatColor(cat)
+                ws.Cells(r, 4).Value = GlobalExpenses(i, 4): ws.Cells(r, 5).Value = GlobalExpenses(i, 11)
+                ws.Cells(r, 6).Value = GlobalExpenses(i, 6): ws.Cells(r, 7).Value = amt: ws.Cells(r, 8).Value = rate
+                ws.Cells(r, 9).Value = twdAmt: ws.Cells(r, 10).Value = myBurden: ws.Cells(r, 11).Value = myCredit
+                r = r + 1
+            End If
+        End If
+    Next i
+    If r > detailStartRow + 1 Then ws.ListObjects.Add(xlSrcRange, ws.Range(ws.Cells(detailStartRow, 1), ws.Cells(r - 1, 11)), , xlYes).TableStyle = THEME_TABLE_STYLE
+    
+    ' ?? 修復個人明細的 Icon 顏色 (C=類別)
+    ws.Columns("C").Font.Name = FONT_NAME_ICON
+    
+    BuildSummaryTableAndChart ws, dictCat, "M" & detailStartRow: Set dictCat = Nothing
+    FinalizeSheet ws
+End Sub
+' ==========================================
+' ?? Button 5: 終局結算 (語法修正版)
+' ==========================================
+Public Sub Btn5_GroupSummary()
+    If Not HasData Then MsgBox "請匯入數據", vbExclamation: Exit Sub
+    LoadRoster
+    Dim dictUsers As Object, key As Variant: Set dictUsers = GetActiveUsers()
+    Dim ws As Worksheet: InitSheet ws, "Group_Summary"
+    
+    Dim r As Long: r = 3
+    
+    ' 1. 建立標題貼紙
+    Dim banner As Shape
+    Set banner = ws.Shapes.AddShape(msoShapeRoundedRectangle, 50, 30, 800, 50)
+    With banner
+        .TextFrame.Characters.Text = "【 結算快報 】"
+        .TextFrame.Characters.Font.Name = FONT_NAME_TEXT
+        .TextFrame.Characters.Font.Size = 24
+        .TextFrame.Characters.Font.Bold = True
+        .TextFrame.Characters.Font.Color = RGB(3, 105, 161)
+        .Fill.ForeColor.RGB = COLOR_BLUE_HEADER
+        .line.Visible = msoFalse
+    End With
+    
+    r = r + 4
+    
+    ' 2. 初始化計算字典
+    Dim dictAdvance As Object, dictBurden As Object, dictSharedReturn As Object
+    Set dictAdvance = CreateObject("Scripting.Dictionary")
+    Set dictBurden = CreateObject("Scripting.Dictionary")
+    Set dictSharedReturn = CreateObject("Scripting.Dictionary")
+    
+    For Each key In dictUsers.Keys
+        dictAdvance.Add CStr(key), 0
+        dictBurden.Add CStr(key), 0
+        dictSharedReturn.Add CStr(key), 0
+    Next key
+    
+    ' 3. 計算核心 (展開迴圈，避免語法錯誤)
+    Dim i As Long, twdAmt As Double, perPerson As Double
+    Dim payer As String, shares As String, shareArr() As String, s As Variant
+    
+    For i = 1 To UBound(GlobalExpenses, 1)
+        If GlobalExpenses(i, 1) <> "" Then
+            payer = CStr(GlobalExpenses(i, 9))
+            shares = CStr(GlobalExpenses(i, 10))
+            shareArr = Split(shares, "|")
+            twdAmt = val(GlobalExpenses(i, 5)) * val(GlobalExpenses(i, 7))
+            
+            If UBound(shareArr) >= 0 Then
+                perPerson = twdAmt / (UBound(shareArr) + 1)
+            Else
+                perPerson = 0
+            End If
+            
+            ' 紀錄代墊 (Payer)
+            If payer <> "u004" And UBound(shareArr) > 0 Then
+                If dictAdvance.Exists(payer) Then
+                    dictAdvance(payer) = dictAdvance(payer) + twdAmt
+                End If
+            End If
+            
+            ' 紀錄負擔 (Burden)
+            For Each s In shareArr
+                If dictBurden.Exists(CStr(s)) Then
+                    dictBurden(CStr(s)) = dictBurden(CStr(s)) + perPerson
+                End If
+            Next s
+            
+            ' 紀錄公款回補 (Shared Return)
+            If payer = "u004" Then
+                For Each s In shareArr
+                    If dictSharedReturn.Exists(CStr(s)) Then
+                        dictSharedReturn(CStr(s)) = dictSharedReturn(CStr(s)) + perPerson
+                    End If
+                Next s
+            End If
+        End If
+    Next i
+    
+    ' 4. 畫出彩色結算條 (Shape)
+    Dim u004Refund As Double: u004Refund = GetPublicFundRefundPerPerson()
+    Dim finalVal As Double
+    Dim topPos As Double: topPos = 90
+    
+    For Each key In dictUsers.Keys
+        finalVal = dictAdvance(CStr(key)) - dictBurden(CStr(key)) + dictSharedReturn(CStr(key)) + u004Refund
+        Dim msg As String, icon As String
+        icon = GetPersonName(CStr(key))
+        
+        Dim resBar As Shape
+        Set resBar = ws.Shapes.AddShape(msoShapeRoundedRectangle, 50, topPos, 600, 40)
+        
+        Dim statusColor As Long
+        If finalVal > 0 Then
+            msg = " 拿回: " & Format(finalVal, "$#,##0")
+            statusColor = COLOR_GREEN_LIGHT
+        ElseIf finalVal < 0 Then
+            msg = " 須補: " & Format(Abs(finalVal), "$#,##0")
+            statusColor = COLOR_RED_LIGHT
+        Else
+            msg = " 平衡"
+            statusColor = RGB(240, 240, 240)
+        End If
+        
+        With resBar
+            .Fill.ForeColor.RGB = statusColor
+            .line.Visible = msoFalse
+            .TextFrame.Characters.Text = icon & msg
+            .TextFrame.Characters.Font.Name = FONT_NAME_TEXT
+            .TextFrame.Characters.Font.Size = 18
+            .TextFrame.Characters.Font.Bold = True
+            .TextFrame.Characters.Font.Color = RGB(50, 50, 50)
+            
+            ' 彩色關鍵：鎖定 Icon 為 Emoji 字型
+            .TextFrame.Characters(1, 2).Font.Name = FONT_NAME_ICON
+            .TextFrame.HorizontalAlignment = xlHAlignLeft
+            .TextFrame.MarginLeft = 20
+        End With
+        
+        topPos = topPos + 50
+    Next key
+    
+    ' 5. 輸出下方詳細表格
+    r = r + dictUsers.count + 2
+    Dim tableStartRow As Long: tableStartRow = r
+    
+    ws.Range("B" & r).Resize(1, 7).Value = Array("成員", "預繳/代墊(A)", "應攤總額(B)", "公帳分回(C)", "公款殘值退回(D)", "最終應收/補", "狀態")
+    r = r + 1
+    
+    For Each key In dictUsers.Keys
+        ws.Cells(r, 2).Value = GetPersonName(CStr(key))
+        ws.Cells(r, 3).Value = dictAdvance(CStr(key))
+        ws.Cells(r, 4).Value = dictBurden(CStr(key))
+        ws.Cells(r, 5).Value = dictSharedReturn(CStr(key))
+        ws.Cells(r, 6).Value = u004Refund
+        
+        finalVal = dictAdvance(CStr(key)) - dictBurden(CStr(key)) + dictSharedReturn(CStr(key)) + u004Refund
+        ws.Cells(r, 7).Value = finalVal
+        
+        If finalVal > 0 Then
+            ws.Cells(r, 8).Value = GetEmoji(&H1F7E2) & " 拿回"
+            ws.Cells(r, 8).Interior.Color = COLOR_GREEN_LIGHT
+        ElseIf finalVal < 0 Then
+            ws.Cells(r, 8).Value = GetEmoji(&H1F534) & " 須補"
+            ws.Cells(r, 8).Interior.Color = COLOR_RED_LIGHT
+        Else
+            ws.Cells(r, 8).Value = GetEmoji(&H26AA) & " 平衡"
+        End If
+        r = r + 1
+    Next key
+    
+    If r > tableStartRow + 1 Then
+        ws.ListObjects.Add(xlSrcRange, ws.Range("B" & tableStartRow & ":H" & (r - 1)), , xlYes).TableStyle = THEME_TABLE_STYLE
+    End If
+    
+    ' 表格內的 Icon 雖然是黑白，但還是設一下字型
+    ws.Columns("B").Font.Name = FONT_NAME_ICON
+    ws.Columns("H").Font.Name = FONT_NAME_ICON
+    
+    FinalizeSheet ws
+End Sub
+' ==========================================
+' ?? 統計圖表 (圖表標籤也要修復)
+' ==========================================
+Private Sub BuildSummaryTableAndChart(ByVal ws As Worksheet, ByVal dict As Object, ByVal anchorCell As String)
+    If dict.count = 0 Then Exit Sub
+    Dim r As Long, c As Long: Dim startRange As Range: Set startRange = ws.Range(anchorCell)
+    r = startRange.row: c = startRange.Column
+    
+    ws.Cells(r, c).Value = "消費類別": ws.Cells(r, c + 1).Value = "總金額": ws.Cells(r, c + 2).Value = "佔比 (%)"
+    Dim key As Variant, total As Double, i As Long
+    For Each key In dict.Keys: total = total + dict(key): Next key
+    
+    i = 1
+    For Each key In dict.Keys
+        ws.Cells(r + i, c).Value = GetCatEmoji(CStr(key)) & " " & key: ws.Cells(r + i, c + 1).Value = dict(key)
+        If total > 0 Then ws.Cells(r + i, c + 2).Value = dict(key) / total Else ws.Cells(r + i, c + 2).Value = 0
+        ws.Range(ws.Cells(r + i, c), ws.Cells(r + i, c + 2)).Interior.Color = GetCatColor(CStr(key))
+        i = i + 1
+    Next key
+    
+    ' ?? 小表格強制彩色 (C欄=類別)
+    ws.Columns(c).Font.Name = FONT_NAME_ICON
+    
+    Dim tblRng As Range: Set tblRng = ws.Range(ws.Cells(r, c), ws.Cells(r + dict.count, c + 2))
+    Dim tbl As ListObject: On Error Resume Next: ws.ListObjects("Tbl_Summary_" & ws.Name).Delete: On Error GoTo 0
+    Set tbl = ws.ListObjects.Add(xlSrcRange, tblRng, , xlYes): tbl.Name = "Tbl_Summary_" & ws.Name
+    tbl.TableStyle = ""
+    tbl.ShowTotals = True
+    tbl.ListColumns("總金額").DataBodyRange.NumberFormat = "$#,##0": tbl.ListColumns("佔比 (%)").DataBodyRange.NumberFormat = "0.0% "
+    
+    Dim chtObj As ChartObject
+    Set chtObj = ws.ChartObjects.Add(Left:=ws.Cells(r, c + 4).Left, Top:=ws.Cells(r, c + 4).Top, Width:=600, Height:=400)
+    
+    With chtObj.Chart
+        .ChartType = xlPie: .SetSourceData Source:=ws.Range(ws.Cells(r, c), ws.Cells(r + dict.count, c + 1))
+        .HasTitle = False: .HasLegend = False
+        .ChartArea.Format.Fill.Visible = msoFalse: .ChartArea.Format.line.Visible = msoFalse
+        .PlotArea.Format.Fill.Visible = msoFalse: .PlotArea.Format.line.Visible = msoFalse
+        
+        Dim s As Series: Set s = .SeriesCollection(1)
+        s.ApplyDataLabels AutoText:=True, ShowValue:=True, ShowPercentage:=True, ShowCategoryName:=False
+        
+        Dim pt As Point, dl As DataLabel, ptIndex As Long: ptIndex = 1
+        For Each key In dict.Keys
+            Set pt = s.Points(ptIndex): pt.Format.Fill.ForeColor.RGB = GetCatColor(CStr(key))
+            Set dl = pt.DataLabel: dl.Position = xlLabelPositionOutsideEnd
+            dl.Text = GetCatEmoji(CStr(key)) & " " & key & vbLf & Format(dict(key), "$#,##0") & " (" & Format(dict(key) / total, "0%") & ")"
+            With dl.Format.TextFrame2.TextRange.Font
+                ' ?? 圖表上的標籤也強制使用彩色字型
+                .Name = FONT_NAME_ICON
+                .Size = 14: .Fill.ForeColor.RGB = RGB(0, 0, 0)
+            End With
+            ptIndex = ptIndex + 1
+        Next key
+        Dim txtBox As Shape
+        Set txtBox = .Shapes.AddLabel(msoTextOrientationHorizontal, 400, 350, 200, 50)
+        With txtBox.TextFrame2.TextRange
+            .Text = "消費分佈統計": .Font.Name = FONT_NAME_TEXT: .Font.Size = 20: .Font.Bold = msoTrue
+            .Font.Fill.ForeColor.RGB = RGB(0, 0, 0): .ParagraphFormat.Alignment = msoAlignRight
+        End With
+    End With
+    ws.Columns(c).Resize(, 3).AutoFit
+End Sub
+
+' ==========================================
+' ?? 核心輔助工具
+' ==========================================
+Private Sub InitSheet(ByRef ws As Worksheet, ByVal sName As String)
+    On Error Resume Next: Application.DisplayAlerts = False: Sheets(sName).Delete: Application.DisplayAlerts = True: On Error GoTo 0
+    Set ws = Sheets.Add(After:=Sheets(Sheets.count)): ws.Name = sName: ws.Cells.Font.Name = FONT_NAME_TEXT: ws.Cells.Font.Size = FONT_SIZE_BODY
+End Sub
+
+Private Sub FinalizeSheet(ByRef ws As Worksheet, Optional ByVal AddHomeBtn As Boolean = True)
+    If AddHomeBtn Then
+        Dim btnHome As Shape
+        Set btnHome = ws.Shapes.AddShape(msoShapeRoundedRectangle, 0, 0, 100, 30)
+        With btnHome
+            .TextFrame.Characters.Text = GetEmoji(&H1F3E0) & " 回首頁"
+            
+            With .TextFrame.Characters.Font
+                .Name = FONT_NAME_TEXT
+                .Size = 12
+                .Bold = True
+                .Color = RGB(50, 50, 50)
+            End With
+            
+            .Fill.ForeColor.RGB = RGB(220, 220, 220)
+            .line.Visible = msoFalse
+            .OnAction = "GoToHome"
+            
+            ' ?? Home 鍵修正：鎖定前 2 個字元，確保房子是彩色的
+            .TextFrame.Characters(1, 2).Font.Name = FONT_NAME_ICON
+        End With
+    End If
+    
+    ws.Columns.AutoFit
+    ws.Columns("A").ColumnWidth = 16
+    
+    ws.Activate: ws.Range("A1").Select
+End Sub
+
+Public Sub GoToHome()
+    Sheets("指揮中心").Activate
+End Sub
+
+Private Function GetSharesNames(ByVal shares As String) As String
+    Dim arr() As String, res As String, i As Long: arr = Split(shares, "|"): res = ""
+    For i = 0 To UBound(arr)
+        res = res & GetPersonName(arr(i)) & IIf(i < UBound(arr), ", ", "")
+    Next i
+    GetSharesNames = res
+End Function
+
+Private Function GetCatEmoji(ByVal cat As String) As String
+    Select Case LCase(Trim(cat))
+        Case "food": GetCatEmoji = GetEmoji(&H1F374)
+        Case "transport": GetCatEmoji = GetEmoji(&H1F684)
+        Case "stay": GetCatEmoji = GetEmoji(&H1F3E0)
+        Case "ticket": GetCatEmoji = GetEmoji(&H1F3AB)
+        Case "supply": GetCatEmoji = GetEmoji(&H1F6D2)
+        Case "gift": GetCatEmoji = GetEmoji(&H1F381)
+        Case "gear": GetCatEmoji = GetEmoji(&H1F9E6)
+        Case "other": GetCatEmoji = GetEmoji(&H1F4E6)
+        Case Else: GetCatEmoji = GetEmoji(&H2728)
+    End Select
+End Function
+
+Private Function GetCatColor(ByVal cat As String) As Long
+    Select Case LCase(Trim(cat))
+        Case "food": GetCatColor = RGB(255, 182, 193)
+        Case "transport": GetCatColor = RGB(173, 216, 230)
+        Case "stay": GetCatColor = RGB(255, 250, 205)
+        Case "ticket": GetCatColor = RGB(144, 238, 144)
+        Case "supply": GetCatColor = RGB(230, 230, 250)
+        Case "gift": GetCatColor = RGB(255, 192, 203)
+        Case "gear": GetCatColor = RGB(152, 251, 152)
+        Case "other": GetCatColor = RGB(245, 245, 245)
+        Case Else: GetCatColor = RGB(255, 255, 255)
+    End Select
+End Function
