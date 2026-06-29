@@ -179,7 +179,14 @@ const CATEGORIES = [
     { id: "other", icon: "📦", name: "雜支", color: "bg-gray-100" }
 ];
 
-const DEFAULT_RATES = { "TWD": 1.00, "USD": 31.50, "EUR": 34.80 };
+const DEFAULT_RATES = { 
+    "EUR": 36.41, 
+    "BAM": 18.48, // 波士尼亞馬克 範例匯率
+    "MKD": 0.56,  // 馬其頓代納爾 範例匯率
+    "ALL": 0.35   // 阿爾巴尼亞列克 範例匯率
+    "USD": 31.86,
+    "TWD": 1.00,
+};
 
 const QUICK_GROUPS = [
     { name: "Solo", shares: ["u001"], label: "Solo" },
@@ -260,7 +267,9 @@ let AppState = {
         // groupIndex removed as we use cycleQuickGroup logic directly
         paymentMethod: "cash", 
         category: "food",
-        date: new Date().toISOString().slice(0,10),
+        // 這樣寫可以抓到瀏覽器當前所在時區的「年-月-日」，不會再受到 UTC 差 8 小時的影響
+date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'),
+
         notes: "", 
         isAdvancedMode: false // New Switching State
     },
