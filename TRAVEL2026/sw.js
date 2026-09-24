@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ledger-v1'; // 更新版本號
+const CACHE_NAME = 'ledger-v2'; // 更新版本號
 
 self.addEventListener('install', event => {
   self.skipWaiting(); 
